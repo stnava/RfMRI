@@ -7,7 +7,8 @@ get data from:
 
 by 
 
-`for x in  sub003 sub004 sub005 sub006 sub007  ; do 
+```
+for x in  sub003 sub004 sub005 sub006 sub007  ; do 
 
   mkdir ${x}
 
@@ -15,7 +16,8 @@ by
 
   mv .//climb.genomics.cn/pub/10.5524/100001_101000/100051/data/data/${x} . 
 
-done`
+done
+```
 
 
 
