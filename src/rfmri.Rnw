@@ -177,6 +177,21 @@ Validation Mechanisms
 \end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Analysis Scripts}
+in RfMRI scripts directory 
+\begin{itemize}[<+->]
+\item process.sh --- calls scripts for each subject 
+\item process\_bold.R --- bold processing for one run ... outputs hrf,
+  matrices and (thresholded) beta maps
+\item ants\_compare.sh --- do a quick registration and compute
+  comparison metrics
+\item activity\_cross\_validation.R --- apply training features to
+  test data ... works for either univariate or multivariate data
+\end{itemize}
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
