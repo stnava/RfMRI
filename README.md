@@ -5,6 +5,11 @@ antsr reproducibility study of fmri
 
 get data from:
 
+Single subject fMRI test–retest reliability metrics and confounding factors
+Krzysztof J. Gorgolewski a,b,⁎, Amos J. Storkey c, Mark E. Bastin b, Ian Whittle d, Cyril Pernet
+
+[article](http://www.gigasciencejournal.com/content/2/1/6)
+
 by 
 
 ```
