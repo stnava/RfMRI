@@ -26,4 +26,5 @@ done
 
 
 
-then see the scripts directory for processing
+then see the pdf presentation and scripts directory for processing description
+

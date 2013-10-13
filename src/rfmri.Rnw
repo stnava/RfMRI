@@ -1,0 +1,145 @@
+\documentclass[14pt]{beamer}
+
+\usepackage[scaled=0.85]{helvet}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\usecolortheme{orchid}
+\useinnertheme[shadow]{rounded}
+\setbeamertemplate{items}[default]
+
+\usefonttheme[onlymath]{serif}
+\setbeamertemplate{navigation symbols}{}
+\setbeamerfont{smallfont}{size=\small}
+
+\usepackage{verbatim}
+\begin{comment}
+\documentclass{beamer}
+\usetheme{Stats}
+\setbeamercovered{transparent}
+\usepackage{color}
+\usepackage{url}
+\usepackage{graphics}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{inconsolata}
+\usepackage{xcolor}
+\usepackage[T1]{fontenc}
+\usepackage{alltt}
+\usepackage{url}
+\usepackage{breakurl}
+\end{comment}
+
+\newenvironment<>{problock}[1]{%
+  \begin{actionenv}#2%
+      \def\insertblocktitle{#1}%
+      \par%
+      \mode<presentation>{%
+        \setbeamercolor{block title}{fg=white,bg=black}
+       \setbeamercolor{block body}{fg=black,bg=red}
+       \setbeamercolor{itemize item}{fg=orange!20!black}
+       \setbeamertemplate{itemize item}[triangle]
+     }%
+      \usebeamertemplate{block begin}}
+    {\par\usebeamertemplate{block end}\end{actionenv}}
+% \usepackage{listings}
+% \lstset{breaklines=true,showstringspaces=false}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+% \usetheme{Szeged}
+% \usecolortheme{beaver}
+% \usetheme{Goettingen}
+% \usecolortheme{rose}
+\newcommand{\R}{\emph{R}~}
+\newcommand{\knitr}{\emph{knitr}~}
+\newcommand{\antsr}{\emph{ANTsR}~}
+\usepackage{hyperref}
+  \hypersetup{
+  	colorlinks=true
+		linkcolor=blue
+		}
+
+% render_listings()
+<<setup, include=FALSE>>=
+booleval<-FALSE
+library(knitr)
+options(width=50)
+opts_chunk$set(fig.path='figure/antsr-',fig.align='center',fig.show='hold',size='footnotesize')
+knit_theme$set(  knit_theme$get("seashell")  )
+getPckg <- function(pckg) install.packages(pckg, repos = "http://cran.r-project.org")
+library( ANTsR )
+library( oro.nifti )
+library( visreg )
+library( ggplot2 )
+library( boot )
+library( candisc )
+library( pheatmap ) 
+myregion<-"CentralSulcus"
+@
+
+\title[fMRI Reproducibility in R]{fMRI Reproducibility in R}
+
+\author{\textbf{Brian B. Avants}}
+\institute[PENN]
+{
+\textcolor{blue}{PENN Image Computing \& Science Laboratory}\newline
+\textcolor{purple}{Dept. of Radiology,
+University of Pennsylvania}\newline
+Philadelphia, PA, 19104 
+\thanks{KRNS}
+}
+
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+
+{
+\setbeamertemplate{navigation symbols}{}
+\begin{frame}[plain]
+\center
+\begin{center}
+This presentation is copyrighted by\\
+The \textbf{ANTs software consortium}\\
+\bigskip
+distributed under the\\
+\textbf{Creative Commons by Attribution License 3.0}\\
+\url{http://creativecommons.org/licenses/by/3.0}\\
+\end{center}
+\end{frame}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{
+\setbeamertemplate{navigation symbols}{}
+\begin{frame}[plain]
+Use \R to test processing strategies for fMRI
+\begin{itemize}[<+->]
+\item Pre-processing
+  \href{http://www.sciencedirect.com/science/article/pii/S1053811913005053}{\textcolor{blue}{minimal
+    connectome strategies}}
+\item Univariate: GLM with
+  \href{http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2214855/}{\textcolor{blue}{CompCor}}
+  and \href{http://stnava.github.io/ANTs/}{\textcolor{blue}{ANTs}} motion correction.
+\item Multivariate: fMRI application of \href{http://www.sciencedirect.com/science/article/pii/S1053811913009841}{\textcolor{blue}{SCCAN}}
+\end{itemize}
+\end{frame}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Discussion $+$ Future Work}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\end{document}
+

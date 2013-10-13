@@ -1,0 +1,13 @@
+#!/usr/bin/env Rscript
+library(knitr)
+knit('src/rfmri.Rnw',tangle=TRUE)
+knit('src/rfmri.Rnw',tangle=FALSE)
+for ( i in c(1) ) {
+  system('pdflatex rfmri ')
+  system('bibtex rfmri ')
+}
+system('pdflatex rfmri ')
+system('rm *log *aux *blg ')
+system('mv rfmri.pdf rfmri_x.pdf')
+# system('scp rfmri.pdf stnava,advants@frs.sourceforge.net:/home/pfs/project/a/ad/advants/ANTS/ANTS_Latest')
+# system(" git checkout gh-pages ; cp rfmri_x.pdf rfmri.pdf ; git add rfmri.pdf ; git commit -m 'ENH: update to pdf' ; git push origin gh-pages ; git checkout master ")
