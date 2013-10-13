@@ -116,10 +116,31 @@ distributed under the\\
 }
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Reproducibility Datasets}
+
+Dataset 1 :
+\href{http://www.ncbi.nlm.nih.gov/pubmed/23628139}{\textcolor{blue}{Gorgolewski}} n=10
+
+Dataset 2 :
+\href{http://www.ncbi.nlm.nih.gov/pubmed/19289173}{\textcolor{blue}{Duncan}}
+n $>$ 35
+
+<<out.width='.4\\linewidth',dev='jpeg'>>= 
+run1<-rnorm(100)
+run2<-rnorm(100)
+cor.test(run1,run2)
+@
+
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 {
-\setbeamertemplate{navigation symbols}{}
-\begin{frame}[plain]
+\begin{frame}[fragile]
+\frametitle{\R Processing}
 Use \R to test processing strategies for fMRI
 \begin{itemize}[<+->]
 \item Pre-processing
@@ -128,10 +149,34 @@ Use \R to test processing strategies for fMRI
 \item Univariate: GLM with
   \href{http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2214855/}{\textcolor{blue}{CompCor}}
   and \href{http://stnava.github.io/ANTs/}{\textcolor{blue}{ANTs}} motion correction.
-\item Multivariate: fMRI application of \href{http://www.sciencedirect.com/science/article/pii/S1053811913009841}{\textcolor{blue}{SCCAN}}
+\item Multivariate: fMRI application of
+  \href{http://www.sciencedirect.com/science/article/pii/S1053811913009841}{\textcolor{blue}{SCCAN}}
+\item Multi/Univariate use same pre-processing.  
 \end{itemize}
 \end{frame}
-}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Signal Reproducibility Measurements}
+Validation Mechanisms
+\begin{itemize}[<+->]
+\item Use test-retest data as training-testing data
+\item Threshold statistical map consistently:  top x\% of beta map
+\item Signal correlation / difference across runs
+\item Peak activation
+\item Signal overlap (Dice) between clusters in thresholded beta map between two
+  runs  
+\item Minimum distance sum (MDS) between clusters in thresholded beta map between two
+  runs  
+ \begin{block}{Prediction}
+ Significance of training features in testing run 
+ \end{block}
+\end{itemize}
+\end{frame}
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
