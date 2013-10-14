@@ -234,6 +234,7 @@ in RfMRI scripts directory
 \begin{frame}[fragile]
 \frametitle{Discussion $+$ Future Work}
 \begin{itemize}[<+->]
+\item Update presentation with reference results compiled into document
 \item Autocorrelation correction needed for univariate
 \item Not needed in multivariate---but should we use it?
 \item Why does multivariate outperform univariate?
