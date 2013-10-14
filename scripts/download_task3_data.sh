@@ -1,5 +1,5 @@
 
-for x in   sub005 sub006   ; do 
+for x in   sub003   ; do 
 
   mkdir ${x}
   if [[ ! -s ./${x}/BOLD/task003_run001/bold.nii.gz ]] ; then 

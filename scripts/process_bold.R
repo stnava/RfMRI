@@ -30,7 +30,7 @@ q()
 }
 
 library(ANTsR)
-sparval <- 0.1
+sparval <- 0.05
 fmri<-antsImageRead('bold.nii.gz',4)
 ImageMath(4,fmri,'SliceTimingCorrection',fmri,'bspline')
 stim<-as.numeric(read.table(opt$design)$V1)
@@ -57,7 +57,7 @@ if ( TRUE ) {
   fmrimodel <- taskFMRI( smat , hrf, myvars  , correctautocorr = T,
    residualizedesignmatrix  = F, myformula=myform ) # 
   betas<-fmrimodel$beta
-  print( paste( max( betas )  ) )  # around 10 or so 
+  maxbeta<-max( betas )
   betaimg<-antsImageClone( myvars$mask ) # put beta vals in image space
   betaimg[ myvars$mask > 0.5 ] <- betas
   betathresh<-min(betas[rev(order(betas))][1:( round( length(betas) * sparval ))])
@@ -87,4 +87,7 @@ ImageMath(3,sccan$eig1[[1]],'abs',sccan$eig1[[1]])
 ImageMath(3,sccan$eig1[[2]],'abs',sccan$eig1[[2]])
 antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="" )  )
 antsImageWrite( sccan$eig1[[2]] ,  paste("sccan2.nii.gz",sep="" )  )
-
+############################################
+outputstruct<-paste("TrainMaxBeta:",maxbeta)
+cat( outputstruct , file = "maxbeta.txt" )
+############################################

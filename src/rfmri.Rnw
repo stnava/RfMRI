@@ -163,7 +163,7 @@ Use \R to test processing strategies for fMRI
 Validation Mechanisms
 \begin{itemize}[<+->]
 \item Use test-retest data as training-testing data
-\item Threshold statistical map consistently:  top x\% of beta map
+\item Threshold statistical map consistently:  top x\% of $\beta$ map
 \item Signal correlation / difference across runs
 \item Peak activation
 \item Signal overlap (Dice) between clusters in thresholded beta map between two
@@ -182,7 +182,8 @@ Validation Mechanisms
 \frametitle{Analysis Scripts}
 in RfMRI scripts directory 
 \begin{itemize}[<+->]
-\item process.sh --- calls scripts for each subject 
+\item process.sh --- calls scripts for each subject (should write your
+  own according to data organization)
 \item process\_bold.R --- bold processing for one run ... outputs hrf,
   matrices and (thresholded) beta maps
 \item ants\_compare.sh --- do a quick registration and compute
@@ -193,10 +194,50 @@ in RfMRI scripts directory
 \end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Repeatability: Univariate}
+10 subjects 
+\begin{itemize}[<+->]
+\item Do $\beta$ maps overlap?  somewhat
+\item Do $\beta$ maps correlate?  {\em Yes} Over 0.83
+\item Are significant training features there in test data?  {\em Yes}
+  in 3 of 5.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Repeatability: Multivariate}
+10 subjects 
+\begin{itemize}[<+->]
+\item Do $\beta$ maps overlap?  somewhat
+\item Do $\beta$ maps correlate?  {\em Yes} Over 0.94
+\item Are significant training features there in test data? {\em Yes}
+  in 5 of 5.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Multivariate vs Univariate}
+\begin{itemize}[<+->]
+\item {\bf Multivariate features hold up better in test data}
+\item Spatial smoothing separate in univariate
+\item Sparseness has different meaning
+\end{itemize}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Discussion $+$ Future Work}
+\begin{itemize}[<+->]
+\item Autocorrelation correction needed for univariate
+\item Not needed in multivariate---but should we use it?
+\item Why does multivariate outperform univariate?
+\end{itemize}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
