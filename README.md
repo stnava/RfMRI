@@ -3,6 +3,8 @@ RfMRI
 
 antsr reproducibility study of fmri
 
+[slides are here](https://github.com/stnava/RfMRI/raw/gh-pages/rfmri.pdf?raw)
+
 get data from:
 
 Single subject fMRI test–retest reliability metrics and confounding factors,
