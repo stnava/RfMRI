@@ -151,7 +151,7 @@ Use \R to test processing strategies for fMRI
   and \href{http://stnava.github.io/ANTs/}{\textcolor{blue}{ANTs}} motion correction.
 \item Multivariate: fMRI application of
   \href{http://www.sciencedirect.com/science/article/pii/S1053811913009841}{\textcolor{blue}{SCCAN}}
-\item Multi/Univariate use same pre-processing.  
+\item Multi/Univariate use same pre-processing and includes high-pass filtering.
 \end{itemize}
 \end{frame}
 

@@ -37,9 +37,10 @@ stim<-as.numeric(read.table(opt$design)$V1)
 tr<-as.numeric( opt$tr )
 onsets<-round(stim/tr)
 print( onsets )
-blockfoot = c(12, 48, 84, 120, 156)
 blockfing = c(0, 36, 72, 108,144)
-hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=2.5 )
+blockfoot <- blockfing + 12
+blockmout <- blockfoot + 12 
+hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr )
 hrf[1:4]<-0 # first few frames are junk 
 myvars<-getfMRInuisanceVariables( fmri, moreaccurate = TRUE ,  maskThresh=100 )
 mat <- myvars$matrixTimeSeries
@@ -80,7 +81,7 @@ print("done residualizing for sccan")
 cblock <- as.numeric(hrf) 
 mypreds<-as.matrix( cbind( cblock, as.numeric( cblock > 0 )  ) )
 sccan<-sparseDecom2( inmatrix=list( mat , mypreds ), inmask = c( myvars$mask , NA ) ,
-  sparseness=c( sparval , 1 ), nvecs=ncol(mypreds), its=5, smooth=1,
+  sparseness=c( sparval*2 , 1 ), nvecs=ncol(mypreds), its=5, smooth=1,
   perms=2, cthresh = c(5, 0) , robust=0 ) 
 antsImageWrite( myvars$avg ,  paste("avg.nii.gz",sep="" )  )
 ImageMath(3,sccan$eig1[[1]],'abs',sccan$eig1[[1]])
