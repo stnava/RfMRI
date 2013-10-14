@@ -30,7 +30,7 @@ q()
 }
 
 library(ANTsR)
-sparval <- 0.01
+sparval <- 0.1
 fmri<-antsImageRead('bold.nii.gz',4)
 ImageMath(4,fmri,'SliceTimingCorrection',fmri,'bspline')
 stim<-as.numeric(read.table(opt$design)$V1)
@@ -39,8 +39,10 @@ onsets<-round(stim/tr)
 print( onsets )
 blockfing = c(0, 36, 72, 108,144)
 blockfoot <- blockfing + 12
-blockmout <- blockfoot + 12 
-hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr )
+blockmout <- blockfoot + 12
+blocko = c(1,24, 48, 72, 96, 120, 144 )
+block<-blocko
+hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=block , durations=rep(  12,  length( block ) ) ,  rt=tr )
 hrf[1:4]<-0 # first few frames are junk 
 myvars<-getfMRInuisanceVariables( fmri, moreaccurate = FALSE ,  maskThresh=100 )
 mat <- myvars$matrixTimeSeries
@@ -52,11 +54,11 @@ sfmri<-antsImageClone( fmri )
 SmoothImage(4,fmri,3,sfmri)
 mat<-timeseries2matrix( sfmri, myvars$mask )
 mat<-mat[5:nrow(mat),]
-# mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
+mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
 myform<-"motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal "
 if ( TRUE ) {
-  fmrimodel <- taskFMRI( mat , hrf, myvars  , correctautocorr = F,
-   residualizedesignmatrix  = T, myformula=myform ) # 
+  fmrimodel <- taskFMRI( mat , hrf, myvars  , correctautocorr = T,
+   residualizedesignmatrix  = F, myformula=myform ) # 
   betas<-fmrimodel$beta
   maxbeta<-max( betas )
   betaimg<-antsImageClone( myvars$mask ) # put beta vals in image space

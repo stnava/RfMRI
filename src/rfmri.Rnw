@@ -236,6 +236,7 @@ in RfMRI scripts directory
   own according to data organization)
 \item process\_bold.R --- bold processing for one run ... outputs hrf,
   matrices and (thresholded) beta maps
+\item for cross-validation, one needs to register the images and transfer the features
 \item ants\_compare.sh --- do a quick registration and compute
   comparison metrics
 \item activity\_cross\_validation.R --- apply training features to
@@ -261,7 +262,8 @@ in RfMRI scripts directory
 \begin{frame}[fragile]
 \frametitle{Max $\beta$ Distribution}
 <<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
-fn<-Sys.glob("../../*/*/*run001/maxbeta.csv")
+whichtask<-"task002"
+fn<-Sys.glob(paste("../../*/*/",whichtask,"_run001/maxbeta.csv",sep=''))
 maxbeta1<-rep(NA,length(fn)/2)
 for ( i in 1:length(fn) )  maxbeta1[i]<-read.csv(fn[i])$TrainMaxBeta
 fn<-Sys.glob("../../*/*/*run002/maxbeta.csv")
@@ -355,7 +357,7 @@ m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Univariate Significance in Test Data: Raw Data}
+\frametitle{Raw Univariate Sig in Test Data}
 <<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
 fn<-Sys.glob("../../*/*/compareu/prediction_x.csv")
 for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
@@ -381,7 +383,7 @@ m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Multivariate Significance in Test Data: Raw Data}
+\frametitle{Raw Multivariate Sig in Test Data}
 <<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
 fn<-Sys.glob("../../*/*/comparem/prediction_x.csv")
 for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
@@ -428,6 +430,7 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
 \item Autocorrelation correction may be useful 
 \item Test decoding of 3 simple tasks with both univariate and
   multivariate feature selection
+\item Look at group consistency
 \end{itemize}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
