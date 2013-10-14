@@ -30,7 +30,7 @@ q()
 }
 
 library(ANTsR)
-sparval <- 0.05
+sparval <- 0.01
 fmri<-antsImageRead('bold.nii.gz',4)
 ImageMath(4,fmri,'SliceTimingCorrection',fmri,'bspline')
 stim<-as.numeric(read.table(opt$design)$V1)
@@ -42,21 +42,21 @@ blockfoot <- blockfing + 12
 blockmout <- blockfoot + 12 
 hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr )
 hrf[1:4]<-0 # first few frames are junk 
-myvars<-getfMRInuisanceVariables( fmri, moreaccurate = TRUE ,  maskThresh=100 )
+myvars<-getfMRInuisanceVariables( fmri, moreaccurate = FALSE ,  maskThresh=100 )
 mat <- myvars$matrixTimeSeries
 mat<-mat[5:length(hrf),]
 myvars$globalsignal<-myvars$globalsignal[ 5:length(hrf) ]
 myvars$nuisancevariables<-myvars$nuisancevariables[5:length(hrf),]
 hrf<-hrf[ 5:length(hrf) ]
-mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
+sfmri<-antsImageClone( fmri )
+SmoothImage(4,fmri,3,sfmri)
+mat<-timeseries2matrix( sfmri, myvars$mask )
+mat<-mat[5:nrow(mat),]
+# mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
 myform<-"motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal "
 if ( TRUE ) {
-  sfmri<-antsImageClone( fmri )
-  SmoothImage(4,fmri,4,sfmri)
-  smat<-timeseries2matrix( sfmri, myvars$mask )
-  smat<-smat[5:nrow(smat),]
-  fmrimodel <- taskFMRI( smat , hrf, myvars  , correctautocorr = T,
-   residualizedesignmatrix  = F, myformula=myform ) # 
+  fmrimodel <- taskFMRI( mat , hrf, myvars  , correctautocorr = F,
+   residualizedesignmatrix  = T, myformula=myform ) # 
   betas<-fmrimodel$beta
   maxbeta<-max( betas )
   betaimg<-antsImageClone( myvars$mask ) # put beta vals in image space
@@ -69,8 +69,15 @@ if ( TRUE ) {
   betaimg[ myvars$mask > 0.5 ] <-betasthresh
   antsImageWrite(betaimg, paste("betast.nii.gz",sep="") )
   amat<-fmrimodel$fmrimat
+############################################
+  mydf<-data.frame(TrainMaxBeta=maxbeta)
+  write.csv( mydf , file = "maxbeta.csv" )
+############################################
 }
-# now some multivariate stuff 
+# now some multivariate stuff
+mat<-timeseries2matrix( fmri, myvars$mask )
+mat<-mat[5:nrow(mat),]
+mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
 ndf<-data.frame( globalsignal = myvars$globalsignal,  myvars$nuisancevariables )
 ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf ) ) )
 mat<-residuals( lm( as.formula( paste(" mat ~ ",myform) ) , data = ndf ) )
@@ -80,15 +87,14 @@ write.csv(hrf,'antsr_hrf.csv',quote=F,row.names=F)
 print("done residualizing for sccan")
 cblock <- as.numeric(hrf) 
 mypreds<-as.matrix( cbind( cblock, as.numeric( cblock > 0 )  ) )
+mypreds<-as.matrix( cblock ) 
 sccan<-sparseDecom2( inmatrix=list( mat , mypreds ), inmask = c( myvars$mask , NA ) ,
-  sparseness=c( sparval*2 , 1 ), nvecs=ncol(mypreds), its=5, smooth=1,
-  perms=2, cthresh = c(5, 0) , robust=0 ) 
+  sparseness=c( sparval , 1 ), nvecs=ncol(mypreds), its=5, smooth=1,
+  perms=1, cthresh = c(5, 0) , robust=0 ) 
 antsImageWrite( myvars$avg ,  paste("avg.nii.gz",sep="" )  )
 ImageMath(3,sccan$eig1[[1]],'abs',sccan$eig1[[1]])
-ImageMath(3,sccan$eig1[[2]],'abs',sccan$eig1[[2]])
 antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="" )  )
-antsImageWrite( sccan$eig1[[2]] ,  paste("sccan2.nii.gz",sep="" )  )
-############################################
-outputstruct<-paste("TrainMaxBeta:",maxbeta)
-cat( outputstruct , file = "maxbeta.txt" )
-############################################
+if ( ncol(mypreds) > 1 ) {
+  ImageMath(3,sccan$eig1[[2]],'abs',sccan$eig1[[2]])
+  antsImageWrite( sccan$eig1[[2]] ,  paste("sccan2.nii.gz",sep="" )  )
+}

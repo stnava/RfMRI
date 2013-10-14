@@ -3,7 +3,8 @@
 \usepackage[scaled=0.85]{helvet}
 
 \usepackage{tikz}
-\usetikzlibrary{calc}
+\usetikzlibrary{calc,positioning,automata}
+\usepackage{pstricks}
 
 \usecolortheme{orchid}
 \useinnertheme[shadow]{rounded}
@@ -21,7 +22,6 @@
 \usepackage{color}
 \usepackage{url}
 \usepackage{graphics}
-\usepackage{tikz}
 \usepackage{booktabs}
 \usepackage{inconsolata}
 \usepackage{xcolor}
@@ -77,6 +77,7 @@ library( ggplot2 )
 library( boot )
 library( candisc )
 library( pheatmap ) 
+library(ggplot2)
 myregion<-"CentralSulcus"
 @
 
@@ -89,7 +90,20 @@ myregion<-"CentralSulcus"
 \textcolor{purple}{Dept. of Radiology,
 University of Pennsylvania}\newline
 Philadelphia, PA, 19104 
-\thanks{KRNS}
+\thanks{for KRNS project}
+}
+
+\newcommand{\myewline}[2]{
+\path(#1.east) --(#2.west)  coordinate[pos=0.4](mid);
+\draw[-latex] (#1.east) -| (mid) |- (#2.west);
+}
+\newcommand{\mynsline}[2]{
+\path(#1.north) --(#2.south)  coordinate[pos=0.4](mid);
+\draw[-latex] (#1.north) -| (mid) |- (#2.south);
+}
+\newcommand{\mysnline}[2]{
+\path(#1.south) --(#2.north)  coordinate[pos=0.4](mid);
+\draw[-latex] (#1.south) -| (mid) |- (#2.north);
 }
 
 
@@ -116,6 +130,42 @@ distributed under the\\
 }
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Block Diagram: \antsr fMRI Processing}
+ \begin{tikzpicture}
+\node[draw=blue] at (-25,7) (fmri) {fMRI};
+\node[draw=blue] at (-18,7) (sltim) {SliceTiming}; 
+ \node[draw=blue]  at ++(-15,7) (hrf) {HRF}; 
+\node[draw=blue]  at ++(-20,5) (nuis) {Motion$+$CompCor}; 
+\node[draw=blue] at ++(-16,5) (hipass) {High-Pass}; 
+ \node[draw=blue] at ++(-20,3) (ac) {Smooth$+$AutoCorrelation}; 
+\node[draw=blue] at ++(-16,3) (ustats) {U-Statistics}; 
+ \node[draw=blue] at ++(-20,1) (mstats) {M-Statistics}; 
+\draw[->] (fmri) to [out = 0, in = 180, looseness = 1] (sltim);
+ \draw[->] (sltim) to [out = 0, in = 180, looseness = 1] (hrf);
+ \draw[->] (sltim) to [out = 0, in = 180, looseness = 1] (nuis);
+ \draw[->] (nuis) to [out = 0, in = 180, looseness = 1] (hipass);
+ \draw[->] (hipass) to [out = 0, in = 180, looseness = 1] (mstats);
+ \draw[->] (hipass) to [out = 0, in = 180, looseness = 1] (ac);
+ \draw[->] (ac) to [out = 0, in = 180, looseness = 1] (ustats);
+% \draw[->] (hrf) to [out = 0, in = 180, looseness = 1] (ustats);
+% \draw[->] (hrf) to [out = 0, in = 180, looseness = 1] (mstats);
+\end{tikzpicture}
+\end{frame}
+
+
+\begin{comment}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Block Diagram: Univariate}
+ \begin{tikzpicture}
+   \draw (0,0) node [fill=white,color=blue,text=white] {BOLD};
+   \draw (0.5,0) -- ++(4,0) node [midway,fill=white,color=blue,text=white] {ABC};
+  \end{tikzpicture}
+\end{frame}
+\end{comment}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
@@ -202,28 +252,166 @@ in RfMRI scripts directory
 \item Do $\beta$ maps overlap?  somewhat
 \item Do $\beta$ maps correlate?  {\em Yes} Over 0.83
 \item Are significant training features there in test data?  {\em Yes}
-  in 3 of 5.
+  in 6 of 7.
 \end{itemize}
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Max $\beta$ Distribution}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/*run001/maxbeta.csv")
+maxbeta1<-rep(NA,length(fn)/2)
+for ( i in 1:length(fn) )  maxbeta1[i]<-read.csv(fn[i])$TrainMaxBeta
+fn<-Sys.glob("../../*/*/*run002/maxbeta.csv")
+maxbeta2<-rep(NA,length(fn)/2)
+for ( i in 1:length(fn) )  maxbeta2[i]<-read.csv(fn[i])$TrainMaxBeta
+################
+qdata <- data.frame(c(maxbeta1,maxbeta2))
+m <- ggplot(qdata,aes(x=c(maxbeta1,maxbeta2)))
+m + geom_histogram(aes(y = ..density..), binwidth = 2, colour = "black",
+    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
+@
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Univariate Overlap Distribution}
+<<out.width='.5\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/compareu/*y_eval.csv")
+print(paste(length(fn),"subjects"))
+diceu<-rep(NA,length(fn))
+for ( i in 1:length(fn) )  diceu[i]<-read.csv(fn[i])$Dice
+################
+qdata <- data.frame(diceu)
+m <- ggplot(qdata,aes(x=qdata[,1]))
+m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = "black",
+    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
+@
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Multivariate Overlap Distribution}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/comparem/*y_eval.csv")
+dicem<-rep(NA,length(fn))
+for ( i in 1:length(fn) )  dicem[i]<-read.csv(fn[i])$Dice
+################
+qdata <- data.frame(dicem)
+m <- ggplot(qdata,aes(x=qdata[,1]))
+m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = "black",
+    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
+@
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Univariate MDS Distribution}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/compareu/*y_eval.csv")
+mdsu<-rep(NA,length(fn))
+for ( i in 1:length(fn) )  mdsu[i]<-read.csv(fn[i])$Min_Distance
+qdata <- data.frame(mdsu)
+m <- ggplot(qdata,aes(x=qdata[,1]))
+m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = "black",
+    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
+@
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Multivariate MDS Distribution}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/comparem/*y_eval.csv")
+mdsm<-rep(NA,length(fn))
+for ( i in 1:length(fn) )  mdsm[i]<-read.csv(fn[i])$Min_Distance
+qdata <- data.frame(mdsm)
+m <- ggplot(qdata,aes(x=qdata[,1]))
+m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = "black",
+    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
+@
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Univariate Significance in Test Data}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/compareu/prediction_x.csv")
+predu <-rep(NA,length(fn))
+for ( i in 1:length(fn) ) predu[i]<-read.csv(fn[i],h=T)$ProjectionPVal
+qdata <- data.frame(predu)
+m <- ggplot(qdata,aes(x=qdata[,1]))
+m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = "black",
+    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
+@
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Univariate Significance in Test Data: Raw Data}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/compareu/prediction_x.csv")
+for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
+@
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Multivariate Significance in Test Data}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/comparem/prediction_x.csv")
+predm<-rep(NA,length(fn))
+for ( i in 1:length(fn) ) predm[i]<-read.csv(fn[i],h=T)$ProjectionPVal
+qdata <- data.frame(predm)
+m <- ggplot(qdata,aes(x=qdata[,1]))
+m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = "black",
+    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
+@
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Multivariate Significance in Test Data: Raw Data}
+<<out.width='.8\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../../*/*/comparem/prediction_x.csv")
+for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
+@
+\end{frame}
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Repeatability: Multivariate}
 10 subjects 
 \begin{itemize}[<+->]
-\item Do $\beta$ maps overlap?  somewhat
+\item Do $\beta$ maps overlap?  more so than univariate if sparseness
+  is lower (0.1) ... {\em mvar data not smoothed}
 \item Do $\beta$ maps correlate?  {\em Yes} Over 0.94
 \item Are significant training features there in test data? {\em Yes}
-  in 5 of 5.
+  in 5 of 5 if we select bigger components.  No if sparseness is too high.
 \end{itemize}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Multivariate vs Univariate}
+\frametitle{Multivariate vs Univariate---{\em finger tapping task}}
 \begin{itemize}[<+->]
-\item {\bf Multivariate features hold up better in test data}
+\item Univariate features hold up better in test data with focal
+  features
+\item Multivariate features hold up better in test data with "large" features
 \item Spatial smoothing separate in univariate
 \item Sparseness has different meaning
 \end{itemize}
@@ -234,10 +422,12 @@ in RfMRI scripts directory
 \begin{frame}[fragile]
 \frametitle{Discussion $+$ Future Work}
 \begin{itemize}[<+->]
-\item Update presentation with reference results compiled into document
-\item Autocorrelation correction needed for univariate
-\item Not needed in multivariate---but should we use it?
-\item Why does multivariate outperform univariate?
+\item Parameter exploration study for both univariate and multivariate
+  approaches
+\item How do smoothing and specificity interact?
+\item Autocorrelation correction may be useful 
+\item Test decoding of 3 simple tasks with both univariate and
+  multivariate feature selection
 \end{itemize}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

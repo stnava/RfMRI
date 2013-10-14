@@ -24,4 +24,4 @@ MeasureImageSimilarity $dim 0 $bold1 ${nm}_warped.nii.gz ${nm}_log.txt
 MeasureImageSimilarity $dim 1 $bold1 ${nm}_warped.nii.gz ${nm}_log.txt
 ThresholdImage 3 ${nm}_warped.nii.gz ${nm}_evalb2.nii.gz 0.000001 9
 ThresholdImage 3 $bold1 ${nm}_evalb.nii.gz 0.000001 9
-ImageMath 3 ${nm}_eval DiceAndMinDistSum ${nm}_evalb2.nii.gz ${nm}_evalb.nii.gz ${nm}_dist.nii.gz
+ImageMath 3 ${nm}_eval DiceAndMinDistSum ${nm}_evalb2.nii.gz ${nm}_evalb.nii.gz ${nm}_dist.nii.gz\

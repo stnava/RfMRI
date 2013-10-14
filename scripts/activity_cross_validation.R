@@ -72,6 +72,5 @@ for ( nc in ww ) {
 }
 print(paste( " Over all ", length(ww) , " voxels ") )
 print( paste( mean(mycorrs), min( mycorrs ), max( mycorrs ) ) )
-outputstruct<-paste("ProjectionPVal:",mycorr$p.value,"VoxMeanCorr:",mean(mycorrs),"VoxMinCorr:", min( mycorrs ),"VoxMaxCorr:", max( mycorrs ) )
-cat( outputstruct , file = opt$output )
-
+outputdf<-data.frame(ProjectionPVal=mycorr$p.value,VoxMeanPval=mean(mycorrs),VoxMinPval=min( mycorrs ),VoxMaxPval=max( mycorrs ), nvox=length(ww) )
+write.csv(outputdf, opt$output ,row.names=F,quote=F)
