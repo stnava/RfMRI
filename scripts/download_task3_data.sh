@@ -1,5 +1,5 @@
 task=task002
-for x in   sub003   ; do 
+for x in  sub001 sub002 sub004   sub005 sub006 sub007  sub008 sub009 sub010   ; do 
   mkdir ${x}
   if [[ ! -s ./${x}/BOLD/${task}_run001/bold.nii.gz ]] ; then 
     wget -r ftp://anonymous:password@climb.genomics.cn:/pub/10.5524/100001_101000/100051/data/data/${x}/BOLD/${task}_run001/bold.nii.gz

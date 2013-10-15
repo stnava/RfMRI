@@ -40,12 +40,24 @@ print( onsets )
 blockfing = c(0, 36, 72, 108,144)
 blockfoot <- blockfing + 12
 blockmout <- blockfoot + 12
-blocko = c(1,24, 48, 72, 96, 120, 144 )
+blocko = c(24, 48, 72, 96, 120, 144 )
 block<-blocko
 hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=block , durations=rep(  12,  length( block ) ) ,  rt=tr )
-hrf[1:4]<-0 # first few frames are junk 
-myvars<-getfMRInuisanceVariables( fmri, moreaccurate = FALSE ,  maskThresh=100 )
-mat <- myvars$matrixTimeSeries
+hrf[1:4]<-0 # first few frames are junk
+if ( ! file.exists("mat.mha") &  ! file.exists("mask.nii.gz") & ! file.exists("nuis.csv") ) {
+  myvars<-getfMRInuisanceVariables( fmri, moreaccurate = TRUE ,  maskThresh=100 )
+  mat <- myvars$matrixTimeSeries
+  antsImageWrite( as.antsImage(mat) , "mat.mha" )
+  antsImageWrite( myvars$mask , "mask.nii.gz" )
+  antsImageWrite( myvars$avg ,  paste("avg.nii.gz",sep="" )  )
+  write.csv( data.frame( myvars$globalsignal, myvars$nuisancevariables ),  'nuis.csv' )
+} else {
+  nuis<-read.csv('nuis.csv')
+  mat<-as.matrix( antsImageRead( 'mat.mha', 2 ) )
+  mask<-antsImageRead( 'mask.nii.gz', 3 )
+#  avg<-antsImageRead( 'avg.nii.gz', 3 )
+  myvars<-list(  matrixTimeSeries = mat , globalsignal = nuis$myvars.globalsignal, nuisancevariables = nuis, mask=mask )
+}
 mat<-mat[5:length(hrf),]
 myvars$globalsignal<-myvars$globalsignal[ 5:length(hrf) ]
 myvars$nuisancevariables<-myvars$nuisancevariables[5:length(hrf),]
@@ -54,11 +66,12 @@ sfmri<-antsImageClone( fmri )
 SmoothImage(4,fmri,3,sfmri)
 mat<-timeseries2matrix( sfmri, myvars$mask )
 mat<-mat[5:nrow(mat),]
-mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
+timefilter<-TRUE
+if ( timefilter ) mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
 myform<-"motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal "
 if ( TRUE ) {
   fmrimodel <- taskFMRI( mat , hrf, myvars  , correctautocorr = T,
-   residualizedesignmatrix  = F, myformula=myform ) # 
+   residualizedesignmatrix  = T, myformula=myform ) # 
   betas<-fmrimodel$beta
   maxbeta<-max( betas )
   betaimg<-antsImageClone( myvars$mask ) # put beta vals in image space
@@ -79,21 +92,17 @@ if ( TRUE ) {
 # now some multivariate stuff
 mat<-timeseries2matrix( fmri, myvars$mask )
 mat<-mat[5:nrow(mat),]
-mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
+if ( timefilter ) mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
 ndf<-data.frame( globalsignal = myvars$globalsignal,  myvars$nuisancevariables )
 ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf ) ) )
 mat<-residuals( lm( as.formula( paste(" mat ~ ",myform) ) , data = ndf ) )
-antsImageWrite( as.antsImage(mat) , "mat.mha" )
-antsImageWrite( myvars$mask , "mask.nii.gz" )
 write.csv(hrf,'antsr_hrf.csv',quote=F,row.names=F)
 print("done residualizing for sccan")
 cblock <- as.numeric(hrf) 
 mypreds<-as.matrix( cbind( cblock, as.numeric( cblock > 0 )  ) )
-mypreds<-as.matrix( cblock ) 
-sccan<-sparseDecom2( inmatrix=list( mat , mypreds ), inmask = c( myvars$mask , NA ) ,
+sccan<-sparseDecom2( inmatrix=list( amat , mypreds ), inmask = c( myvars$mask , NA ) ,
   sparseness=c( sparval , 1 ), nvecs=ncol(mypreds), its=5, smooth=1,
-  perms=1, cthresh = c(5, 0) , robust=0 ) 
-antsImageWrite( myvars$avg ,  paste("avg.nii.gz",sep="" )  )
+  perms=20, cthresh = c(5, 0) , robust=0 ) 
 ImageMath(3,sccan$eig1[[1]],'abs',sccan$eig1[[1]])
 antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="" )  )
 if ( ncol(mypreds) > 1 ) {

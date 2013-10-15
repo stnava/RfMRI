@@ -38,6 +38,8 @@ library(ANTsR)
 acti<-antsImageRead(opt$activation,3)
 mat<-as.matrix( antsImageRead(opt$boldimg,2) )
 hrf <- as.numeric( read.csv( opt$hrf )$x )
+mat<-mat[5:length(hrf),]
+hrf<-hrf[ 5:length(hrf) ]
 
 if ( FALSE ) {
   fmri<-antsImageRead(opt$boldimg,4)
@@ -59,8 +61,8 @@ if ( FALSE ) {
 ###########################################################################
 mask<-antsImageRead(opt$mask,3)
 acti<-abs( acti[ mask > 0.5 ] )
-ww<-which( acti > 1.e-8 )
-proj<-mat %*% acti
+ww<-which( acti > 1.e-14 )
+proj<-mat[,ww] %*% acti[ww]
 print(" Correlation of projection ")
 mycorr<-cor.test( hrf, proj )
 print( mycorr )

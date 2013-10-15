@@ -1,6 +1,6 @@
 task=task002
 subs="sub007 sub001 sub002 sub003 sub004 sub005 sub006	 sub008 sub009 sub010"
-subs=sub003
+subs=sub002
 homedir=`pwd`
 for x in $subs ; do
   if [[ ! -s ${homedir}/${x}/BOLD/${task}_run001/avg.nii.gz ]] ; then 
