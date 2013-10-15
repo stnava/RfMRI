@@ -3,7 +3,7 @@ subs="sub007 sub001 sub002 sub003 sub004 sub005 sub006	 sub008 sub009 sub010"
 subs=sub002
 homedir=`pwd`
 for x in $subs ; do
-  if [[ ! -s ${homedir}/${x}/BOLD/${task}_run001/avg.nii.gz ]] ; then 
+  if [[ -s ${homedir}/${x}/BOLD/${task}_run001/bold.nii.gz ]] ; then 
     cd ${homedir}/${x}/BOLD/${task}_run001/
     design=${homedir}/${x}/model/model001/onsets/${task}_run002/cond003.txt
     design=${homedir}/sub004/model/model001/onsets/${task}_run001/cond001.txt 
