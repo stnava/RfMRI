@@ -30,7 +30,7 @@ q()
 }
 
 library(ANTsR)
-sparval <- 0.1
+sparval <- 0.11
 fmri<-antsImageRead('bold.nii.gz',4)
 ImageMath(4,fmri,'SliceTimingCorrection',fmri,'bspline')
 stim<-as.numeric(read.table(opt$design)$V1)
@@ -43,7 +43,7 @@ blocko = c(1, 24, 48, 72, 96, 120, 144 )
 block<-blocko
 hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=block , durations=rep(  12,  length( block ) ) ,  rt=tr )
 hrf[1:4]<-0 # first few frames are junk
-if ( ! file.exists("mat.mha") &  ! file.exists("mask.nii.gz") & ! file.exists("nuis.csv") ) {
+if ( ! file.exists("mat.mha") |  ! file.exists("mask.nii.gz") | ! file.exists("nuis.csv") ) {
   myvars<-getfMRInuisanceVariables( fmri, moreaccurate = TRUE ,  maskThresh=100 )
   mat <- myvars$matrixTimeSeries
   antsImageWrite( as.antsImage(mat) , "mat.mha" )
@@ -68,6 +68,11 @@ sfmri<-antsImageClone( fmri )
 SmoothImage(4,fmri,3,sfmri)
 mat<-timeseries2matrix( sfmri, myvars$mask )
 mat<-mat[5:nrow(mat),]
+mysubset<-c(1:(nrow(mat)*1))
+mat<-mat[mysubset,]
+myvars$nuisancevariables<-myvars$nuisancevariables[mysubset,]
+myvars$globalsignal<-myvars$globalsignal[mysubset]
+hrf<-hrf[mysubset]
 timefilter<-FALSE
 residdesign<-FALSE
 CORAC<-FALSE
@@ -98,6 +103,8 @@ mat<-timeseries2matrix( fmri, myvars$mask )
 mat<-mat[5:nrow(mat),]
 if ( timefilter ) mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
 ndf<-data.frame( globalsignal = myvars$globalsignal,  myvars$nuisancevariables )
+mat<-mat[mysubset,]
+ndf<-ndf[mysubset,]
 if ( residdesign ) ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf ) ) )
 mat<-residuals( lm( as.formula( paste(" mat ~ ",myform) ) , data = ndf ) )
 write.csv(hrf,'antsr_hrf.csv',quote=F,row.names=F)
@@ -106,12 +113,12 @@ cblock <- as.numeric(hrf)
 mypreds<-as.matrix( cbind( cblock, as.numeric( cblock > 0 )  ) )
 if ( CORAC ) mat<-amat 
 sccan<-sparseDecom2( inmatrix=list( mat , mypreds ), inmask = c( myvars$mask , NA ) ,
-                    sparseness=c( sparval , -1 ), nvecs=5, its=15, smooth=1,
+                    sparseness=c( sparval , -1 ), nvecs=4, its=4, smooth=1,
   perms=0, cthresh = c(2, 0) , robust=0 ) 
 ImageMath(3,sccan$eig1[[1]],'abs',sccan$eig1[[1]])
 antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="" )  )
 if ( ncol(mypreds) > 1 ) {
   ImageMath(3,sccan$eig1[[2]],'abs',sccan$eig1[[2]])
   ImageMath(3,sccan$eig1[[1]],'+',sccan$eig1[[1]],sccan$eig1[[2]])
-  antsImageWrite( sccan$eig1[[1]] ,  paste("sccan2.nii.gz",sep="" )  )
+  antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="" )  )
 }

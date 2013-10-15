@@ -12,12 +12,14 @@ nm2=` basename $m | cut -d '.' -f 1 `
 nm=bold2to1_${studyid}   # construct output prefix
 reg=${AP}antsRegistration           # path to antsRegistration
 echo affine $m $f outname is $nm
+if [[ ! -s ${nm}_aff.nii.gz ]] ; then 
 $reg -d $dim -r [ $f, $m ,1]  \
                         -m mattes[  $f, $m , 1 , 32, regular, 0.25 ] \
                          -t rigid[ 0.2 ] \
                          -c 10000x1110x100  \
                         -s 2x1x0vox  -f 4x2x1 -l 1 -u 1 -z 1  \
                        -o [${nm},${nm}_aff.nii.gz]
+fi
 #
 ${AP}antsApplyTransforms -d $dim -i $bold2 -r $f -n NearestNeighbor -t ${nm}0GenericAffine.mat -o ${nm}_warped.nii.gz -z 1
 MeasureImageSimilarity $dim 0 $bold1 ${nm}_warped.nii.gz ${nm}_log.txt
