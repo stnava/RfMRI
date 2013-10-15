@@ -40,7 +40,7 @@ print( onsets )
 blockfing = c(0, 36, 72, 108,144)
 blockfoot <- blockfing + 12
 blockmout <- blockfoot + 12
-blocko = c(24, 48, 72, 96, 120, 144 )
+blocko = c(1, 24, 48, 72, 96, 120, 144 )
 block<-blocko
 hrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=block , durations=rep(  12,  length( block ) ) ,  rt=tr )
 hrf[1:4]<-0 # first few frames are junk
@@ -102,7 +102,7 @@ cblock <- as.numeric(hrf)
 mypreds<-as.matrix( cbind( cblock, as.numeric( cblock > 0 )  ) )
 sccan<-sparseDecom2( inmatrix=list( amat , mypreds ), inmask = c( myvars$mask , NA ) ,
   sparseness=c( sparval , 1 ), nvecs=ncol(mypreds), its=5, smooth=1,
-  perms=20, cthresh = c(5, 0) , robust=0 ) 
+  perms=1, cthresh = c(5, 0) , robust=0 ) 
 ImageMath(3,sccan$eig1[[1]],'abs',sccan$eig1[[1]])
 antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="" )  )
 if ( ncol(mypreds) > 1 ) {
