@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
-nrandrun<-5
-ndvis<-10
+nrandrun<-8
+ndvis<-6
 timefilter<-FALSE
 residdesign<-TRUE
 CORAC<-FALSE
 dounivar<-FALSE 
-sparval <- 0.1
+sparval <- 0.15
 library(getopt)
 options(digits=3)
 Args <- commandArgs()
@@ -71,6 +71,7 @@ if ( ! file.exists("mat.mha") |  ! file.exists("mask.nii.gz") | ! file.exists("n
   avg<-antsImageRead( 'avg.nii.gz', 3 )
   myvarsin<-list(  matrixTimeSeries = mat , globalsignal = nuis$myvarsin.globalsignal, nuisancevariables = nuis, mask=mask )
 }
+myvarsin$nuisancevariables<-cbind( myvarsin$nuisancevariable, hrf2=ohrf[,2], hrf3=ohrf[,3] )
 mask<-myvarsin$mask
 randuvar<-antsImageClone( mask )
 randuvar[ mask > 0 ]<-0
@@ -95,14 +96,14 @@ for ( randrun in 1:nrandrun ) {
   nreps<-round( nrow(mat)/ndvis )-1
   for ( i in myruns ) myruns2<-c( myruns2, rep( i , nreps ) ) 
   if (  nrandrun > 1 ) mysubset<-which( myruns2 == 1 )
-  mysubset<-c(1:(nrow(mat)*1))
-  if ( nrandrun > 1 ) mysubset<-sample(mysubset)[1:round(length(mysubset)*0.8)]
+#  mysubset<-c(1:(nrow(mat)*1))
+#  if ( nrandrun > 1 ) mysubset<-sample(mysubset)[1:round(length(mysubset)*0.8)]
   mat<-mat[mysubset,]
   myvars$nuisancevariables<-myvars$nuisancevariables[mysubset,]
   myvars$globalsignal<-myvars$globalsignal[mysubset]
   hrf<-hrf[mysubset,]
   if ( timefilter ) mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
-  myform<-"motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal "
+  myform<-"motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal + hrf2 + hrf3 "
   if ( dounivar ) {
     fmrimodel <- taskFMRI( mat , hrf, myvars  , correctautocorr = CORAC,
                           residualizedesignmatrix  = residdesign, myformula=myform ) # 
@@ -132,16 +133,16 @@ for ( randrun in 1:nrandrun ) {
   mat<-mat[mysubset,]
   hrf<-hrf[mysubset,]
   ndf<-ndf[mysubset,]
-  if ( residdesign ) ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf ) ) )
+  if ( residdesign ) ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf[,1] ) ) )
   mat<-residuals( lm( as.formula( paste(" mat ~ ",myform) ) , data = ndf ) )
   print(paste("done residualizing for sccan, randrun:",randrun))
-  mypreds<-as.matrix( cbind( hrf[,1], as.numeric(  hrf[,1] > 0 )  ) )
+  mypreds<-as.matrix( cbind( hrf, as.numeric(  hrf[,1] > 0 )  ) )
   if ( CORAC ) mat<-amat
   docca<-TRUE
   if ( docca ) {
   sccan<-sparseDecom2( inmatrix=list( mat , mypreds ), inmask = c( myvars$mask , NA ) ,
-                    sparseness=c( sparval , 1 ), nvecs=3, its=3, smooth=1,
-                      perms=0, cthresh = c(10, 0) , robust=0, z=-1 )
+                    sparseness=c( sparval , -0.1 ), nvecs=3, its=15, smooth=1,
+                      perms=0, cthresh = c(10, 0) , robust=0, z=-0.5 )
   myeig<-antsImageClone( sccan$eig1[[1]] )
   print( sccan$eig2 )
   }
@@ -183,7 +184,7 @@ myvars$globalsignal<-myvars$globalsignal[ 5:nrow(hrf) ]
 myvars$nuisancevariables<-myvars$nuisancevariables[5:nrow(hrf),]
 if ( timefilter ) mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
 ndf<-data.frame( globalsignal = myvars$globalsignal,  myvars$nuisancevariables )
-if ( residdesign ) ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf ) ) )
+if ( residdesign ) ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf[,1] ) ) )
 mat<-residuals( lm( as.formula( paste(" mat ~ ",myform) ) , data = ndf ) )
 cblock <- as.numeric( hrf ) 
 mypreds<-as.matrix( cbind( cblock, as.numeric( cblock > 0 )  ) )
