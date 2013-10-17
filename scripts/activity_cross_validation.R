@@ -12,7 +12,6 @@ spec = c(
 'output', 'o', 1, "character" ," output ")
 spec=matrix(spec,ncol=5,byrow=TRUE)
 opt = getopt(spec)
-print( opt$output )
 if ( is.null( opt$boldimg ) ) {
   print( 'no 2D bold matrix , quitting , use --boldimg option')
 q()
@@ -37,7 +36,12 @@ q()
 library(ANTsR)
 acti<-antsImageRead(opt$activation,3)
 mat<-as.matrix( antsImageRead(opt$boldimg,2) )
-hrf <- as.numeric( read.csv( opt$hrf )$x )
+if ( ! file.exists( opt$hrf ) )
+  {
+  print( paste(opt$hrf," file does not exist " ) )
+  q()
+  }
+hrf <- as.numeric( read.csv( opt$hrf )$V1 )
 mat<-mat[5:length(hrf),]
 hrf<-hrf[ 5:length(hrf) ]
 
@@ -61,18 +65,26 @@ if ( FALSE ) {
 ###########################################################################
 mask<-antsImageRead(opt$mask,3)
 acti<-abs( acti[ mask > 0.5 ] )
-ww<-which( acti > 1.e-14 )
+mymean<-mean( acti[ acti > 1.e-10 ] )
+mysd<-sd( acti[ acti > 1.e-10 ]  )
+thresh<-(mymean+mysd*1)
+ww<-which( acti >  thresh )
 proj<-mat[,ww] %*% acti[ww]
-print(" Correlation of projection ")
+print(paste(" Correlation of projection ",length(ww)," at thresh ", thresh ))
 mycorr<-cor.test( hrf, proj )
 print( mycorr )
-mycorrs <- rep( NA, length(ww ) )
-ct<-1
+mycorrs <- rep( 1, sum( mask > 0.5) )
+myqvals <- rep( 1, sum( mask > 0.5) )
 for ( nc in ww ) {
-  mycorrs[ct]<-cor.test( hrf, mat[,nc] )$p.value
-  ct<-ct+1
+  mycorrs[nc]<-cor.test( hrf, mat[,nc] )$p.value
 }
+myqvals[ ww ]<-p.adjust( mycorrs[ ww ] , method="BH" )
 print(paste( " Over all ", length(ww) , " voxels ") )
-print( paste( mean(mycorrs), min( mycorrs ), max( mycorrs ) ) )
-outputdf<-data.frame(ProjectionPVal=mycorr$p.value,VoxMeanPval=mean(mycorrs),VoxMinPval=min( mycorrs ),VoxMaxPval=max( mycorrs ), nvox=length(ww) )
-write.csv(outputdf, opt$output ,row.names=F,quote=F)
+print( paste( mean(myqvals[ ww ]), min( myqvals[ ww ] ), max( myqvals[ ww ] ) ) )
+outputdf<-data.frame(ProjectionPVal=mycorr$p.value,VoxMeanPval=mean(myqvals[ ww ]),VoxMinPval=min( myqvals[ ww ] ),VoxMaxPval=max( myqvals[ ww ] ), nvox=length(ww) )
+write.csv(outputdf, paste( opt$output,'.csv' ,sep='' ) ,row.names=F,quote=F)
+acti<-antsImageClone( mask )
+acti[ mask > 0.5 ]<-0
+acti[ mask > 0.5 ]<-1-myqvals
+antsImageWrite( acti, paste( opt$output,'.nii.gz' ,sep='' ) )
+
