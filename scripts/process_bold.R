@@ -1,12 +1,18 @@
 #!/usr/bin/env Rscript
+smth<-1
 nrandrun<-8
 ndvis<-6
-timefilter<-FALSE
+zval<-( -0.5 )
+clustval<-25
+timefilter<-TRUE
 residdesign<-TRUE
-CORAC<-FALSE
+CORAC<-TRUE
 dounivar<-FALSE 
-sparval <- 0.15
+sparval <- 0.05
+sparval2<- -0.1
+domotor <- FALSE
 library(getopt)
+initlist<-list()
 options(digits=3)
 Args <- commandArgs()
 self<-Args[4]
@@ -39,24 +45,23 @@ library(ANTsR)
 fmri<-antsImageRead('bold.nii.gz',4)
 # fmrit<-antsImageClone(fmri)
 # ImageMath(4,fmrit,'SliceTimingCorrection',fmri,0.0)
-stim<-as.numeric(read.table(opt$design)$V1)
+if ( opt$design == "task003" ) domotor<-TRUE
+print(paste("Do Motor",domotor,opt$design))
 tr<-as.numeric( opt$tr )
-onsets<-round(stim/tr)
+# onsets<-round(stim/tr)
 blockfing = c(0, 36, 72, 108,144)
 blockfoot <- blockfing + 12
 blockmout <- blockfoot + 12 ; blockmout<-blockmout[1:(length(blockmout)-1)]
-blocko = c(1, 24, 48, 72, 96, 120, 144 )
-block<-blockfing
-ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=block , durations=rep(  12,  length( block ) ) ,  rt=tr )
+blocko = c(1, 24, 48, 72, 96, 120, 144 ) # covert 
+if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
 ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
 ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
-ohrf<-cbind( ohrf , ohrf2, ohrf3 )
+if ( domotor ) ohrf<-cbind( ohrf , ohrf2, ohrf3 ) else ohrf<-cbind( ohrf )
 ohrf[1:4,]<-0 # first few frames are junk
 write.csv(ohrf,'antsr_hrf.csv',quote=F,row.names=F)
 if ( ! file.exists("mat.mha") |  ! file.exists("mask.nii.gz") | ! file.exists("nuis.csv")  ) {
   myvarsin<-getfMRInuisanceVariables( fmri, moreaccurate = TRUE ,  maskThresh=100 )
   mat <- myvarsin$matrixTimeSeries
-  print( dim( mat ) )
   antsImageWrite( as.antsImage(mat) , "mat.mha" )
   antsImageWrite( myvarsin$mask , "mask.nii.gz" )
   antsImageWrite( myvarsin$avg ,  paste("avg.nii.gz",sep="" )  )
@@ -71,7 +76,7 @@ if ( ! file.exists("mat.mha") |  ! file.exists("mask.nii.gz") | ! file.exists("n
   avg<-antsImageRead( 'avg.nii.gz', 3 )
   myvarsin<-list(  matrixTimeSeries = mat , globalsignal = nuis$myvarsin.globalsignal, nuisancevariables = nuis, mask=mask )
 }
-myvarsin$nuisancevariables<-cbind( myvarsin$nuisancevariable, hrf2=ohrf[,2], hrf3=ohrf[,3] )
+if ( domotor ) myvarsin$nuisancevariables<-cbind( myvarsin$nuisancevariable, hrf2=ohrf[,2], hrf3=ohrf[,3] )
 mask<-myvarsin$mask
 randuvar<-antsImageClone( mask )
 randuvar[ mask > 0 ]<-0
@@ -84,7 +89,7 @@ for ( randrun in 1:nrandrun ) {
   mat<-mat[5:nrow(hrf),]
   myvars$globalsignal<-myvars$globalsignal[ 5:nrow(hrf) ]
   myvars$nuisancevariables<-myvars$nuisancevariables[5:nrow(hrf),]
-  hrf<-hrf[ 5:nrow(hrf), ]
+  hrf<-as.matrix( hrf[ 5:nrow(hrf), ] )
   sfmri<-antsImageClone( fmri )
   SmoothImage(4,fmri,3,sfmri)
   mat<-timeseries2matrix( sfmri, myvars$mask )
@@ -101,11 +106,19 @@ for ( randrun in 1:nrandrun ) {
   mat<-mat[mysubset,]
   myvars$nuisancevariables<-myvars$nuisancevariables[mysubset,]
   myvars$globalsignal<-myvars$globalsignal[mysubset]
-  hrf<-hrf[mysubset,]
+  if ( domotor ) hrf<-hrf[mysubset,] else  hrf<-as.matrix(hrf[mysubset])
   if ( timefilter ) mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
-  myform<-"motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal + hrf2 + hrf3 "
+  if ( domotor ) colnames(hrf)<-c("hrf","hrf2","hrf3") else colnames(hrf)<-c("hrf")
+  gsig<-myvars$globalsignal
+  arval<-ar(gsig,FALSE,2)$ar
+  arval<-shift(gsig,1)*arval[1]+shift(gsig,2)*arval[2]
+  baseform<-" motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + metricnuis"
+  myform<-paste(baseform," +  globalsignal ")
+  if ( CORAC ) myform<-paste(myform," + arval ")
+  if ( domotor ) myform<-paste(myform," + hrf2 + hrf3 ")
+  print( myform )
   if ( dounivar ) {
-    fmrimodel <- taskFMRI( mat , hrf, myvars  , correctautocorr = CORAC,
+    fmrimodel <- taskFMRI( mat , hrf, myvars  , correctautocorr = FALSE,
                           residualizedesignmatrix  = residdesign, myformula=myform ) # 
     betas<-fmrimodel$beta
     maxbeta<-max( betas )
@@ -131,27 +144,42 @@ for ( randrun in 1:nrandrun ) {
   if ( timefilter ) mat  <- filterfMRIforNetworkAnalysis( cbind(mat) , tr, cbfnetwork = "BOLD" , freqLo=0.01 , freqHi = 0.2  )$filteredTimeSeries
   ndf<-data.frame( globalsignal= myvarsin$globalsignal,  myvarsin$nuisancevariables )
   mat<-mat[mysubset,]
-  hrf<-hrf[mysubset,]
+  if ( domotor ) hrf<-hrf[mysubset,] else hrf<-as.matrix(hrf[mysubset])
   ndf<-ndf[mysubset,]
   if ( residdesign ) ndf<-data.frame( residuals( lm( as.matrix( ndf ) ~ hrf[,1] ) ) )
   mat<-residuals( lm( as.formula( paste(" mat ~ ",myform) ) , data = ndf ) )
   print(paste("done residualizing for sccan, randrun:",randrun))
   mypreds<-as.matrix( cbind( hrf, as.numeric(  hrf[,1] > 0 )  ) )
-  if ( CORAC ) mat<-amat
+  mypreds<-as.matrix( cbind( hrf  ) )
+#  if ( CORAC ) mat<-amat
   docca<-TRUE
   if ( docca ) {
+  bestp<-1
+  nv<-min(c(3,ncol(mypreds)))
   sccan<-sparseDecom2( inmatrix=list( mat , mypreds ), inmask = c( myvars$mask , NA ) ,
-                    sparseness=c( sparval , -0.1 ), nvecs=3, its=15, smooth=1,
-                      perms=0, cthresh = c(10, 0) , robust=0, z=-0.5 )
-  myeig<-antsImageClone( sccan$eig1[[1]] )
+                    sparseness=c( sparval , sparval2 ), nvecs=nv, its=4, smooth=smth,
+                      perms=0, cthresh = c(clustval, 0) , robust=0,
+                      z=zval, initializationList = initlist )
+  if ( length( initlist ) < nv ) initlist<-sccan$eig1
+  for (  kk in 1:nv ) {
+    pv <-  cor.test( hrf[,1], sccan$projections[,kk] )$p.value
+    if ( pv < bestp )
+      {
+      print(paste("choose",kk,pv))
+      bestp<-pv
+      myeig<-antsImageClone( sccan$eig1[[kk]] )
+      }
+    }
   print( sccan$eig2 )
   }
-  bestp<-0.00001
   if ( ! docca ) {
     bestp<-1
-    sccan<-sparseDecom( inmatrix= mat , inmask = mask  , z=0.5,
-                    sparseness=c( sparval  ), nvecs=12, its=2, smooth=1,
-                       cthresh = c(10)  )
+    nv<-12
+    if ( length( initlist ) > 0 ) sparval <- 0 
+    sccan<-sparseDecom( inmatrix= mat , inmask = mask  , z=zval,
+                    sparseness=c( sparval  ), nvecs=nv, its=2, smooth=1,
+                       cthresh = c(10)  , initializationList = initlist )
+    if ( length( initlist ) < nv ) initlist<-sccan$eigenanatomyimages
     for ( jj in 1:ncol(sccan$projections) )
       {
         vox<-sccan$projections[,jj]
@@ -167,7 +195,7 @@ for ( randrun in 1:nrandrun ) {
       }
   }
   ImageMath(3,myeig,'abs',myeig)
-  if ( bestp < 0.01 ) ImageMath(3,randsccan,'+',randsccan,myeig)
+  ImageMath(3,randsccan,'+',randsccan,myeig)
   antsImageWrite( randsccan ,  paste("sccan.nii.gz",sep="")  )
 }
 randmean<-mean( randsccan[ randsccan > 1.e-8 ] )

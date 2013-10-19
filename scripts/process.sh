@@ -1,7 +1,8 @@
 tasks="  task002 task003 "
-for task in task003 ; do 
-subs=" sub003  sub004 sub005 sub006 sub007 sub002	 sub008 sub009 sub010  sub001 "
-subs="  sub006  "
+tasks=" task003 "
+for task in $tasks ; do 
+subs=" sub003  sub004 sub005 sub006 sub007 sub002 sub008 sub009 sub010  sub001 "
+subs=sub003
 homedir=/Users/stnava/Downloads/data_gorgolewski
 for x in $subs ; do
 echo PROCESSING $x and $task 
@@ -9,9 +10,9 @@ echo PROCESSING $x and $task
     cd ${homedir}/${x}/BOLD/${task}_run001/
     design=${homedir}/${x}/model/model001/onsets/${task}_run002/cond003.txt
     design=${homedir}/sub004/model/model001/onsets/${task}_run001/cond001.txt 
-    ${homedir}/scripts/process_bold.R  -d $design -t 2.5 -n run001 -s $x
+    ${homedir}/scripts/process_bold.R  -d $task -t 2.5 -n run001 -s $x
     cd ${homedir}/${x}/BOLD/${task}_run002/
-    ${homedir}/scripts/process_bold.R  -d $design -t 2.5 -n run001 -s $x
+    ${homedir}/scripts/process_bold.R  -d $task -t 2.5 -n run001 -s $x
   fi
 #########################################################
   avg1=${homedir}/${x}/BOLD/${task}_run001/avg.nii.gz 
@@ -36,7 +37,7 @@ echo PROCESSING $x and $task
   bold1=${homedir}/${x}/BOLD/${task}_run001/betast.nii.gz 
   bold2=${homedir}/${x}/BOLD/${task}_run002/betast.nii.gz 
   # some ants stuff 
-  if [[ -s $avg1 ]] &&  [[ -s $avg2 ]] &&  [[ -s $bold1 ]] &&  [[ -s $bold2 ]]  && [[ 1 == 0 ]]  ; then 
+  if [[ -s $avg1 ]] &&  [[ -s $avg2 ]] &&  [[ -s $bold1 ]] &&  [[ -s $bold2 ]]  && [[ 1 == 1 ]]  ; then 
   mkdir -p ${homedir}/${x}/BOLD/${task}_compareu/
   cd ${homedir}/${x}/BOLD/${task}_compareu/
   ${homedir}/scripts/ants_compare.sh $avg1 $avg2 $bold1 $bold2 x

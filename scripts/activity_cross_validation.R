@@ -67,8 +67,9 @@ mask<-antsImageRead(opt$mask,3)
 acti<-abs( acti[ mask > 0.5 ] )
 mymean<-mean( acti[ acti > 1.e-10 ] )
 mysd<-sd( acti[ acti > 1.e-10 ]  )
-thresh<-(mymean+mysd*1)
+thresh <- ( mymean + mysd * 0 )
 ww<-which( acti >  thresh )
+# acti[ ww ]<-1
 proj<-mat[,ww] %*% acti[ww]
 print(paste(" Correlation of projection ",length(ww)," at thresh ", thresh ))
 mycorr<-cor.test( hrf, proj )
