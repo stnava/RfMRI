@@ -1,0 +1,5 @@
+
+# antsMultivariateTemplateConstruction2.sh -d 3 -i 3 -k 1 -f 4x2x1 -s 2x1x0vox -q 30x20x4 -t SyN  -m CC -c 0 -o MY   sub*avg.nii.gz
+antsMultivariateTemplateConstruction2.sh -d 3 -i 3 -k 1 -f 4x2x1 -s 2x1x0vox -q 5x0x0 -t SyN  -m CC -c 0 -o MY2  -z MYtemplate.nii.gz sub*avg.nii.gz
+
+# buildtemplateparallel.sh  -d 3 -m 30x50x20 -t GR  -s MI -c 0 -o MY  sub*avg.nii.gz
