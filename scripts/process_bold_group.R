@@ -61,7 +61,7 @@ if ( is.null( opt$bold ) ) {
 #  fns<-Sys.glob( opt$bold ) # "*/*/*/*group.nii.gz"
   fns<-Sys.glob( paste("*/*/",opt$run,"/*group.nii.gz",sep='') )
   fmri<-antsImageRead( fns[1]  ,4)
-  smoother<-3
+  smoother<-1.5
   SmoothImage(4,fmri,smoother,fmri)
   mat<-whiten( timeseries2matrix( fmri, mask ) )
   print( dim(mat) )
