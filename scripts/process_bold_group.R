@@ -47,7 +47,7 @@ q()
 } else {
   maskin<-antsImageRead( opt$templatemask , 3 )
   mask<-antsImageClone( maskin )
-  th<-c(1,90)
+  th<-c(3,18)
   mask[ mask > th[2] | mask < th[1] ]<-0
   mask[ mask >= th[1] & mask <= th[2] ]<-1
   print( paste( "mask size", sum( mask > 0  ) ))
@@ -61,9 +61,11 @@ if ( is.null( opt$bold ) ) {
 #  fns<-Sys.glob( opt$bold ) # "*/*/*/*group.nii.gz"
   fns<-Sys.glob( paste("*/*/",opt$run,"/*group.nii.gz",sep='') )
   fmri<-antsImageRead( fns[1]  ,4)
-  smoother<-1.5
-  SmoothImage(4,fmri,smoother,fmri)
-  mat<-whiten( timeseries2matrix( fmri, mask ) )
+  ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
+  smoother<-0
+  if ( smoother > 0.001 ) SmoothImage(4,fmri,smoother,fmri)
+  dowhite<-T
+  if ( dowhite ) mat<-whiten( timeseries2matrix( fmri, mask ) ) else mat<-timeseries2matrix( fmri, mask )
   print( dim(mat) )
 if ( opt$design == "task003" ) domotor<-TRUE
 print(paste("Do Motor",domotor,opt$design))
@@ -83,8 +85,9 @@ subjid<-rep(1,nrow(mat) )
   for ( i in 2:length(fns) )
     {
     fmri<-antsImageRead( fns[i]  ,4)
-    SmoothImage(4,fmri,smoother,fmri)
-    locmat<-whiten( timeseries2matrix( fmri, mask ) )
+    ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
+    if ( smoother > 0.001 ) SmoothImage(4,fmri,smoother,fmri)
+    if ( dowhite ) locmat<-whiten( timeseries2matrix( fmri, mask ) ) else locmat<-timeseries2matrix( fmri, mask )
     subjid<-c( subjid, rep(i,nrow(locmat)) )
     mat<-rbind( mat , locmat )
     if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
@@ -105,20 +108,25 @@ subjid<-rep(1,nrow(mat) )
     }
 } 
 betas<-rep(NA, ncol(mat) )
+pvals<-betas
 bnuis<-data.frame( bnuis )
 print( names( bnuis ) )
+if ( FALSE ) {
 progress <- txtProgressBar( min = 0, max = length(betas), style = 3 )
 for ( i in 1:length(betas) )
   {
-  vox<-mat[ , i ] # + globalsignal
-  mdl<-lm( vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3  + subjid , data = bnuis )
-  betas[i]<-coefficients( summary( mdl ) )[2,3]
-#  mdl <- lme(vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal , random = ( ~ 1 | subjid) , data = bnuis )
-#  betas[i]<-summary(mdl)$tTable[2,4]
+  vox<-mat[ , i ] 
+#  arval<-ar(vox,FALSE,2)$ar
+#  arval<-shift(vox,1)*arval[1]+shift(vox,2)*arval[2]
+#  mdl<-lm( vox ~  bhrf + arval + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3  + globalsignal + subjid , data = bnuis )
+#  betas[i]<-coefficients( summary( mdl ) )[2,3]
+  mdl <- lme(vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal , random = ( ~ 1 | subjid) , data = bnuis )
+  betas[i]<-summary(mdl)$tTable[2,4]
+  pvals[i]<-2*pt(-abs(betas[i]),df= (nrow(mat)-1) )
   if ( i %% 500 == 0 | i == 1 )
     {
     print(summary(mdl))
-    print( max( abs( betas ) , na.rm = T ) )
+    print( paste( betas[i] , max( abs( betas ) , na.rm = T ) ) )
     }
   setTxtProgressBar(progress, i)
   }
@@ -126,8 +134,23 @@ close(progress)
 print("done") 
 print( max( betas ) )
 print( min( betas ) )
+print(paste("qvals:", min( p.adjust( pvals ) ) ) )
 print( length( betas ) )
 print( sum( mask > 0 ) )
 mask[ mask > 0 ]<-betas
 antsImageWrite(mask,"group_betas.nii.gz")
-
+}
+################################################
+##################SPARSE-CCA####################
+################################################
+print("BeginResid")
+rmat<-as.matrix( residuals( lm( mat ~ 1 + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal + as.factor(subjid) , data = bnuis  ) ) )
+print("EndResid")
+mypreds<-as.matrix( cbind( bhrf, as.numeric(  bhrf[,1] > 0 )  ) )
+nv<-ncol(mypreds)+1
+sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
+                    sparseness=c( 0.1 , 0.25 ), nvecs=nv, its=5, smooth=1,
+                    perms=50, cthresh = c(5, 0) , robust=0, mycoption=0,
+                    z=-0.25 )
+print( sccan$eig2 )
+antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="")  )

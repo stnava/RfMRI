@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
 smth<-1
-nrandrun<-4
+nrandrun<-1
 ndvis<-8
 zval<-( -1 )
-clustval<-25
+clustval<-20
 timefilter<-FALSE
 residdesign<-FALSE
 CORAC<-FALSE
-dounivar<-TRUE 
-sparval <- 0.2
+dounivar<-FALSE 
+sparval <- 0.1
 sparval2<- -0.3
 domotor <- FALSE
 library(getopt)
@@ -99,7 +99,7 @@ for ( randrun in 1:nrandrun ) {
   sfmri<-antsImageClone( fmri )
   SmoothImage(4,fmri,3,sfmri)
   mat<-timeseries2matrix( sfmri, myvars$mask )
-  mat<-mat[5:nrow(mat),]
+  mat<-whiten( mat[5:nrow(mat),] )
   mysubset<-c(1:(nrow(mat)*1))
   myruns<-c(rep(1,ndvis-1),2)
   myruns<-sample(myruns)
@@ -143,7 +143,7 @@ for ( randrun in 1:nrandrun ) {
     write.csv( mydf , file = "maxbeta.csv" )
 ############################################
   }# now some multivariate stuff
-  mat<-as.matrix( antsImageRead( 'mat.mha', 2 ) )
+  mat<-( as.matrix( antsImageRead( 'mat.mha', 2 ) ) )
   hrf<-ohrf
   hrf<-hrf[5:nrow(mat),]
   mat<-mat[5:nrow(mat),]
