@@ -47,7 +47,7 @@ q()
 } else {
   maskin<-antsImageRead( opt$templatemask , 3 )
   mask<-antsImageClone( maskin )
-  th<-c(3,18)
+  th<-c(1,90)
   mask[ mask > th[2] | mask < th[1] ]<-0
   mask[ mask >= th[1] & mask <= th[2] ]<-1
   print( paste( "mask size", sum( mask > 0  ) ))
@@ -149,8 +149,10 @@ print("EndResid")
 mypreds<-as.matrix( cbind( bhrf, as.numeric(  bhrf[,1] > 0 )  ) )
 nv<-ncol(mypreds)+1
 sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
-                    sparseness=c( 0.1 , 0.25 ), nvecs=nv, its=5, smooth=1,
-                    perms=50, cthresh = c(5, 0) , robust=0, mycoption=0,
-                    z=-0.25 )
+                    sparseness=c( 0.1 , 1 ), nvecs=nv, its=5, smooth=1,
+                    perms=11, cthresh = c(5, 0) , robust=0, mycoption=1,
+                    z=-1 )
 print( sccan$eig2 )
 antsImageWrite( sccan$eig1[[1]] ,  paste("sccan.nii.gz",sep="")  )
+antsImageWrite( sccan$eig1[[2]] ,  paste("sccan2.nii.gz",sep="")  )
+if ( length(sccan$eig1) > 2 ) antsImageWrite( sccan$eig1[[3]] ,  paste("sccan3.nii.gz",sep="")  )
