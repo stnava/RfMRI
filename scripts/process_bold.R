@@ -1,15 +1,15 @@
 #!/usr/bin/env Rscript
 smth<-1
-nrandrun<-8
-ndvis<-6
-zval<-( -0.5 )
+nrandrun<-4
+ndvis<-8
+zval<-( -1 )
 clustval<-25
-timefilter<-TRUE
-residdesign<-TRUE
-CORAC<-TRUE
-dounivar<-FALSE 
-sparval <- 0.05
-sparval2<- -0.1
+timefilter<-FALSE
+residdesign<-FALSE
+CORAC<-FALSE
+dounivar<-TRUE 
+sparval <- 0.2
+sparval2<- -0.3
 domotor <- FALSE
 library(getopt)
 initlist<-list()
@@ -20,6 +20,7 @@ self<-substring(self,8,nchar(as.character(self)))
 spec = c(
 'subjectid', 's', 1, "character" ," unique ID for subject ",
 'design', 'd', 1, "character" ," design matrix ",
+'bold', 'b', 1, "character" ," BOLD image ",
 'tr', 't', 1, "character" ," BOLD tr ",
 'run', 'n', 1, "character" ," which run ",
 'output', 'o', 1, "character" ," output ")
@@ -42,9 +43,13 @@ if ( is.null( opt$subjectid ) ) {
 q()
 }
 library(ANTsR)
-fmri<-antsImageRead('bold.nii.gz',4)
+if ( is.null( opt$bold ) ) {
+  fmri<-antsImageRead('bold.nii.gz',4)
+} else {
+  fmri<-antsImageRead( opt$bold ,4)
+}
 # fmrit<-antsImageClone(fmri)
-# ImageMath(4,fmrit,'SliceTimingCorrection',fmri,0.0)
+ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
 if ( opt$design == "task003" ) domotor<-TRUE
 print(paste("Do Motor",domotor,opt$design))
 tr<-as.numeric( opt$tr )
@@ -62,6 +67,7 @@ write.csv(ohrf,'antsr_hrf.csv',quote=F,row.names=F)
 if ( ! file.exists("mat.mha") |  ! file.exists("mask.nii.gz") | ! file.exists("nuis.csv")  ) {
   myvarsin<-getfMRInuisanceVariables( fmri, moreaccurate = TRUE ,  maskThresh=100 )
   mat <- myvarsin$matrixTimeSeries
+  antsImageWrite( as.antsImage(mat) , "motion_corrected.nii.gz" )
   antsImageWrite( as.antsImage(mat) , "mat.mha" )
   antsImageWrite( myvarsin$mask , "mask.nii.gz" )
   antsImageWrite( myvarsin$avg ,  paste("avg.nii.gz",sep="" )  )
@@ -155,12 +161,12 @@ for ( randrun in 1:nrandrun ) {
   docca<-TRUE
   if ( docca ) {
   bestp<-1
-  nv<-min(c(3,ncol(mypreds)))
+  nv<-ncol(mypreds)+1
   sccan<-sparseDecom2( inmatrix=list( mat , mypreds ), inmask = c( myvars$mask , NA ) ,
                     sparseness=c( sparval , sparval2 ), nvecs=nv, its=4, smooth=smth,
-                      perms=0, cthresh = c(clustval, 0) , robust=0,
+                      perms=0, cthresh = c(clustval, 0) , robust=0, mycoption=0,
                       z=zval, initializationList = initlist )
-  if ( length( initlist ) < nv ) initlist<-sccan$eig1
+  if ( length( initlist ) < nv ) { initlist<-sccan$eig1 }
   for (  kk in 1:nv ) {
     pv <-  cor.test( hrf[,1], sccan$projections[,kk] )$p.value
     if ( pv < bestp )
@@ -174,10 +180,10 @@ for ( randrun in 1:nrandrun ) {
   }
   if ( ! docca ) {
     bestp<-1
-    nv<-12
-    if ( length( initlist ) > 0 ) sparval <- 0 
+    nv<-20
+#    if ( length( initlist ) > 0 ) sparval <- 0 
     sccan<-sparseDecom( inmatrix= mat , inmask = mask  , z=zval,
-                    sparseness=c( sparval  ), nvecs=nv, its=2, smooth=1,
+                    sparseness=c( sparval  ), nvecs=nv, its=3, smooth=1,
                        cthresh = c(10)  , initializationList = initlist )
     if ( length( initlist ) < nv ) initlist<-sccan$eigenanatomyimages
     for ( jj in 1:ncol(sccan$projections) )

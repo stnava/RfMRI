@@ -6,7 +6,7 @@ subs=sub003
 homedir=/Users/stnava/Downloads/data_gorgolewski
 for x in $subs ; do
 echo PROCESSING $x and $task 
-  if [[ -s ${homedir}/${x}/BOLD/${task}_run001/bold.nii.gz ]] && [[ 1 == 1 ]] ; then 
+  if [[ -s ${homedir}/${x}/BOLD/${task}_run001/bold.nii.gz ]] && [[ 1 == 0 ]] ; then 
     cd ${homedir}/${x}/BOLD/${task}_run001/
     design=${homedir}/${x}/model/model001/onsets/${task}_run002/cond003.txt
     design=${homedir}/sub004/model/model001/onsets/${task}_run001/cond001.txt 
