@@ -58,12 +58,12 @@ if ( is.null( opt$bold ) ) {
   print( 'no bold image filename, quitting, use --bold option')
   q()
 } else {
-  fns<-Sys.glob( opt$bold ) # "*/*/*/*group.nii.gz"
-  fns<-Sys.glob( "*/*/*/*group.nii.gz" )
+#  fns<-Sys.glob( opt$bold ) # "*/*/*/*group.nii.gz"
+  fns<-Sys.glob( paste("*/*/",opt$run,"/*group.nii.gz",sep='') )
   fmri<-antsImageRead( fns[1]  ,4)
   smoother<-3
   SmoothImage(4,fmri,smoother,fmri)
-  mat<-timeseries2matrix( fmri, mask )
+  mat<-whiten( timeseries2matrix( fmri, mask ) )
   print( dim(mat) )
 if ( opt$design == "task003" ) domotor<-TRUE
 print(paste("Do Motor",domotor,opt$design))
@@ -84,7 +84,7 @@ subjid<-rep(1,nrow(mat) )
     {
     fmri<-antsImageRead( fns[i]  ,4)
     SmoothImage(4,fmri,smoother,fmri)
-    locmat<-timeseries2matrix( fmri, mask )
+    locmat<-whiten( timeseries2matrix( fmri, mask ) )
     subjid<-c( subjid, rep(i,nrow(locmat)) )
     mat<-rbind( mat , locmat )
     if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
@@ -94,7 +94,7 @@ subjid<-rep(1,nrow(mat) )
     ohrf[1:4,]<-0 # first few frames are junk
     bhrf<-rbind( bhrf, ohrf )
     }
-  fns<-Sys.glob( "*/*/*/nuis.csv" )
+  fns<-Sys.glob( paste("*/*/",opt$run,"/nuis.csv",sep='') )
   nuis<-read.csv(fns[1])
   bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
   for ( i in 2:length(fns) )
@@ -111,13 +111,14 @@ progress <- txtProgressBar( min = 0, max = length(betas), style = 3 )
 for ( i in 1:length(betas) )
   {
   vox<-mat[ , i ] # + globalsignal
-#  mdl<-lm( vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3  + subjid , data = bnuis )
-  mdl <- lme(vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal , random = ( ~ 1 | subjid) , data = bnuis )
-  betas[i]<-summary(mdl)$tTable[2,4]
-  if ( i == 1 )
+  mdl<-lm( vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3  + subjid , data = bnuis )
+  betas[i]<-coefficients( summary( mdl ) )[2,3]
+#  mdl <- lme(vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal , random = ( ~ 1 | subjid) , data = bnuis )
+#  betas[i]<-summary(mdl)$tTable[2,4]
+  if ( i %% 500 == 0 | i == 1 )
     {
     print(summary(mdl))
-    print( betas[i] )
+    print( max( abs( betas ) , na.rm = T ) )
     }
   setTxtProgressBar(progress, i)
   }
