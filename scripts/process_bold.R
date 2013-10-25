@@ -202,7 +202,7 @@ for ( randrun in 1:nrandrun ) {
   }
   ImageMath(3,myeig,'abs',myeig)
   ImageMath(3,randsccan,'+',randsccan,myeig)
-  antsImageWrite( randsccan ,  paste("sccan.nii.gz",sep="")  )
+  antsImageWrite( randsccan ,  paste(opt$output,"sccan.nii.gz",sep="")  )
 }
 randmean<-mean( randsccan[ randsccan > 1.e-8 ] )
 randsd<-sd( randsccan[ randsccan > 1.e-8 ] )
