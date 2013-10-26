@@ -30,3 +30,6 @@ done
 
 then see the pdf presentation and scripts directory for processing description
 
+
+several key-points:  groupwise analysis, nuisance variables, look at globalsignal for subset-selection, random effects, slice-timing, hrf-model selection, whitening ...
+
