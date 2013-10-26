@@ -26,12 +26,19 @@ spec = c(
 'output', 'o', 1, "character" ," output ")
 spec=matrix(spec,ncol=5,byrow=TRUE)
 opt = getopt(spec)
+#../scripts/process_bold_group.R --tr 2.5 --design task002 --run run002
+#  --templatemask ./template/aal.nii.gz  --bold group  --output W ;  
+if ( is.null( opt$tr ) ) {
+  print( 'no tr , automating parameters or use --tr option')
+  opt$tr<-2.5
+  opt$design<-"task002"
+  opt$run<-"run001"
+  opt$templatemask<-"./template/aal.nii.gz"
+  opt$bold<-"group" 
+  opt$output<-"TEST"
+}
 if ( is.null( opt$design ) ) {
   print( 'no design , quitting , use --design option')
-q()
-}
-if ( is.null( opt$tr ) ) {
-  print( 'no tr , quitting , use --tr option')
 q()
 }
 if ( is.null( opt$run ) ) {
@@ -59,14 +66,14 @@ if ( is.null( opt$bold ) ) {
   q()
 } else {
   fns<-Sys.glob( paste("*/",opt$design,"/",opt$run,"/*group.nii.gz",sep='') )
+  fnn<-Sys.glob( paste("*/",opt$design,"/",opt$run,"/nuis.csv",sep='') )
   print( fns )
   fmri<-antsImageRead( fns[1]  ,4)
   ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
   smoother<-0
   if ( smoother > 0.001 ) SmoothImage(4,fmri,smoother,fmri)
   dowhite<-T
-  if ( dowhite ) mat<-whiten( timeseries2matrix( fmri, mask ) ) else mat<-timeseries2matrix( fmri, mask )
-  print( dim(mat) )
+  mat<-timeseries2matrix( fmri, mask )
 if ( opt$design == "task003" ) domotor<-TRUE
 print(paste("Do Motor",domotor,opt$design," run ", opt$run ))
 tr<-as.numeric( opt$tr )
@@ -79,33 +86,50 @@ if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , du
 ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
 ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
 if ( domotor ) ohrf<-cbind( ohrf2 , ohrf, ohrf3 ) else ohrf<-cbind( ohrf )
-ohrf[1:4,]<-0 # first few frames are junk
+nuis<-read.csv(fnn[1])
+bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
+bnuis<-bnuis[5:nrow(mat),]
+ohrf<-ohrf[5:nrow(mat)]
+mat<-mat[5:nrow(mat),]
+myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
+boldthresh<-1200 # mean(myglobsig)-6*sd(myglobsig)
+mat<-subset( mat , myglobsig > boldthresh )
+bnuis<-subset( bnuis , myglobsig > boldthresh )
+ohrf<-as.matrix( subset( ohrf , myglobsig > boldthresh ) )
+myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
+plot( myglobsig , type='l' )
+if ( dowhite ) mat<-whiten( mat ) 
 bhrf<-ohrf
 subjid<-rep(1,nrow(mat) )
   for ( i in 2:length(fns) )
     {
+    print( fns[i] )
     fmri<-antsImageRead( fns[i]  ,4)
     ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
     if ( smoother > 0.001 ) SmoothImage(4,fmri,smoother,fmri)
-    if ( dowhite ) locmat<-whiten( timeseries2matrix( fmri, mask ) ) else locmat<-timeseries2matrix( fmri, mask )
-    subjid<-c( subjid, rep(i,nrow(locmat)) )
-    mat<-rbind( mat , locmat )
+    locmat<-timeseries2matrix( fmri, mask )
     if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
     ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
     ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
     if ( domotor ) ohrf<-cbind( ohrf , ohrf2, ohrf3 ) else ohrf<-cbind( ohrf )
-    ohrf[1:4,]<-0 # first few frames are junk
-    bhrf<-rbind( bhrf, ohrf )
-    }
-  fns<-Sys.glob( paste("*/",opt$design,"/",opt$run,"/nuis.csv",sep='') )
-  nuis<-read.csv(fns[1])
-  bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
-  for ( i in 2:length(fns) )
-    {
-    nuis<-read.csv(fns[i]) 
+    nuis<-read.csv(fnn[i]) 
     nuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
+    ohrf<-ohrf[5:nrow(locmat)]
+    nuis<-nuis[5:nrow(locmat),]
+    locmat<-locmat[5:nrow(locmat),]
+    myglobsig<-apply( locmat, FUN=mean, MARGIN=1 )
+    locmat<-subset( locmat , myglobsig > boldthresh )
+    nuis<-subset( nuis , myglobsig > boldthresh )
+    ohrf<-as.matrix( subset( ohrf , myglobsig > boldthresh ) )
+    print( paste( "LOCMAT DIM" ,dim(locmat) ) )
+    myglobsig2<-apply( locmat, FUN=mean, MARGIN=1 )
+    plot( myglobsig2 , type='l' )
+    if ( dowhite ) locmat<-whiten( locmat )  
+    subjid<-c( subjid, rep(i,nrow(locmat)) )
+    mat<-rbind( mat , locmat )
+    bhrf<-rbind( bhrf, ohrf )
     bnuis<-rbind( bnuis , nuis )
-    }
+  }
 } 
 betas<-rep(NA, ncol(mat) )
 pvals<-betas
@@ -126,7 +150,7 @@ for ( i in 1:length(betas) )
   if ( i %% 500 == 0 | i == 1 )
     {
     print(summary(mdl))
-    print( paste( betas[i] , max( abs( betas ) , na.rm = T ) ) )
+    print( paste( betas[i] , max( abs( betas ) , na.rm = T ), min( abs( pvals ) , na.rm = T ) ) )
     }
   setTxtProgressBar(progress, i)
   }
@@ -135,23 +159,22 @@ print("done")
 print( max( betas ) )
 print( min( betas ) )
 print(paste("qvals:", min( p.adjust( pvals ) ) ) )
-print( length( betas ) )
-print( sum( mask > 0 ) )
-mask[ mask > 0 ]<-betas
-antsImageWrite(mask,"group_betas.nii.gz")
+betaimg<-antsImageClone( mask )
+betaimg[ mask > 0 ]<-betas
+antsImageWrite(betaimg,paste(opt$output,"group_betas.nii.gz",sep=''))
 }
 ################################################
 ##################SPARSE-CCA####################
 ################################################
 print("BeginResid")
-rmat<-as.matrix( residuals( lm( as.matrix(mat) ~ 1 + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal + as.factor(subjid) , data = bnuis  ) ) )
+rmat<-as.matrix( residuals( lm( as.matrix(mat) ~ 1 + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal + as.factor(subjid) , data = bnuis ) ) )
 print("EndResid")
 mypreds<-as.matrix( cbind( bhrf, as.numeric(  bhrf[,1] > 0 )  ) )
 nv<-ncol(mypreds)+1
 sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
-                    sparseness=c( 0.05 , -1 ), nvecs=nv, its=5, smooth=1,
-                    perms=1, cthresh = c(5, 0) , robust=0, mycoption=0,
-                    z=-0.5 )
+                    sparseness=c( 0.15 , 0.1 ), nvecs=nv, its=15, smooth=1,
+                    perms=5, cthresh = c(10, 0) , robust=0, mycoption=1,
+                    z=-1 , ell1=1 )
 print( sccan$eig2 )
 antsImageWrite( sccan$eig1[[1]] ,  paste(opt$output,"sccan.nii.gz",sep="")  )
 antsImageWrite( sccan$eig1[[2]] ,  paste(opt$output,"sccan2.nii.gz",sep="")  )
@@ -161,3 +184,5 @@ print( cor.test( bhrf[,1] , sccan$projections[,1] ) )
 print( cor.test( bhrf[,1] , sccan$projections[,2] ) )
 if ( length(sccan$eig1) > 2 ) print( cor.test( bhrf[,1] , sccan$projections[,3] ) )
 if ( length(sccan$eig1) > 3 ) print( cor.test( bhrf[,1] , sccan$projections[,4] ) )
+antsImageWrite( as.antsImage( rmat ) , paste(opt$output,"rmat.mha",sep="") )
+write.csv( bhrf, paste(opt$output,"bhrf.csv",sep="") , quote=F , row.names=F )
