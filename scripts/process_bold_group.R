@@ -172,8 +172,8 @@ print("EndResid")
 mypreds<-as.matrix( cbind( bhrf, as.numeric(  bhrf[,1] > 0 )  ) )
 nv<-ncol(mypreds)+1
 sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
-                    sparseness=c( 0.15 , 0.1 ), nvecs=nv, its=15, smooth=1,
-                    perms=5, cthresh = c(10, 0) , robust=0, mycoption=1,
+                    sparseness=c( 0.15 , 0.1 ), nvecs=nv, its=5, smooth=1,
+                    perms=0, cthresh = c(10, 0) , robust=0, mycoption=1,
                     z=-1 , ell1=1 )
 print( sccan$eig2 )
 antsImageWrite( sccan$eig1[[1]] ,  paste(opt$output,"sccan.nii.gz",sep="")  )
