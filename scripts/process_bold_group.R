@@ -18,12 +18,12 @@ Args <- commandArgs()
 self<-Args[4]
 self<-substring(self,8,nchar(as.character(self)))
 spec = c(
-'templatemask', 's', 1, "character" ," 3D template mask name ",
-'design', 'd', 1, "character" ," design matrix ",
-'bold', 'b', 1, "character" ," BOLD image ",
-'tr', 't', 1, "character" ," BOLD tr ",
-'run', 'n', 1, "character" ," which run ",
-'output', 'o', 1, "character" ," output ")
+  'templatemask', 's', 1, "character" ," 3D template mask name ",
+  'design', 'd', 1, "character" ," design matrix ",
+  'bold', 'b', 1, "character" ," BOLD image ",
+  'tr', 't', 1, "character" ," BOLD tr ",
+  'run', 'n', 1, "character" ," which run ",
+  'output', 'o', 1, "character" ," output ")
 spec=matrix(spec,ncol=5,byrow=TRUE)
 opt = getopt(spec)
 #../scripts/process_bold_group.R --tr 2.5 --design task002 --run run002
@@ -39,18 +39,18 @@ if ( is.null( opt$tr ) ) {
 }
 if ( is.null( opt$design ) ) {
   print( 'no design , quitting , use --design option')
-q()
+  q()
 }
 if ( is.null( opt$run ) ) {
   print( 'no run , quitting , use --run option')
-q()
+  q()
 }
 library(ANTsR)
 library(lme4)
 library(nlme)
 if ( is.null( opt$templatemask ) ) {
   print( 'no templatemask , quitting , use --templatemask option')
-q()
+  q()
 } else {
   maskin<-antsImageRead( opt$templatemask , 3 )
   mask<-antsImageClone( maskin )
@@ -59,8 +59,7 @@ q()
   mask[ mask >= th[1] & mask <= th[2] ]<-1
   print( paste( "mask size", sum( mask > 0  ) ))
 }
-
-
+#######################################################################
 if ( is.null( opt$bold ) ) {
   print( 'no bold image filename, quitting, use --bold option')
   q()
@@ -74,34 +73,34 @@ if ( is.null( opt$bold ) ) {
   if ( smoother > 0.001 ) SmoothImage(4,fmri,smoother,fmri)
   dowhite<-T
   mat<-timeseries2matrix( fmri, mask )
-if ( opt$design == "task003" ) domotor<-TRUE
-print(paste("Do Motor",domotor,opt$design," run ", opt$run ))
-tr<-as.numeric( opt$tr )
-# onsets<-round(stim/tr)
-blockfing = c(0, 36, 72, 108,144)+5 # 5 frames of offset 
-blockfoot <- blockfing + 12
-blockmout <- blockfoot + 12 ; blockmout<-blockmout[1:(length(blockmout)-1)]
-blocko = c(1, 24, 48, 72, 96, 120, 144 )+5 # covert 
-if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
-ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
-ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
-if ( domotor ) ohrf<-cbind( ohrf2 , ohrf, ohrf3 ) else ohrf<-cbind( ohrf )
-nuis<-read.csv(fnn[1])
-bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
-bnuis<-bnuis[5:nrow(mat),]
-ohrf<-ohrf[5:nrow(mat)]
-mat<-mat[5:nrow(mat),]
-myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
-boldthresh<-1200 # mean(myglobsig)-6*sd(myglobsig)
-mat<-subset( mat , myglobsig > boldthresh )
-bnuis<-subset( bnuis , myglobsig > boldthresh )
-ohrf<-as.matrix( subset( ohrf , myglobsig > boldthresh ) )
-myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
-plot( myglobsig , type='l' )
-if ( dowhite ) mat<-whiten( mat ) 
-bhrf<-ohrf
-subjid<-rep(1,nrow(mat) )
-whichsubs<-2:length(fns)
+  if ( opt$design == "task003" ) domotor<-TRUE
+  print(paste("Do Motor",domotor,opt$design," run ", opt$run ))
+  tr<-as.numeric( opt$tr )
+  nbadframes<-5
+  blockfing = c(0, 36, 72, 108,144)+nbadframes # nbadframes frames of offset 
+  blockfoot <- blockfing + 12
+  blockmout <- blockfoot + 12 ; blockmout<-blockmout[1:(length(blockmout)-1)]
+  blocko = c(1, 24, 48, 72, 96, 120, 144 )+nbadframes # covert 
+  if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
+  ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
+  ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
+  if ( domotor ) ohrf<-cbind( ohrf2 , ohrf, ohrf3 ) else ohrf<-cbind( ohrf )
+  nuis<-read.csv(fnn[1])
+  bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
+  bnuis<-bnuis[nbadframes:nrow(mat),]
+  ohrf<-ohrf[nbadframes:nrow(mat)]
+  mat<-mat[nbadframes:nrow(mat),]
+  myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
+  boldthresh<-1200 # mean(myglobsig)-6*sd(myglobsig)
+  mat<-subset( mat , myglobsig > boldthresh )
+  bnuis<-subset( bnuis , myglobsig > boldthresh )
+  ohrf<-as.matrix( subset( ohrf , myglobsig > boldthresh ) )
+  myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
+  plot( myglobsig , type='l' )
+  if ( dowhite ) mat<-whiten( mat ) 
+  bhrf<-ohrf
+  subjid<-rep(1,nrow(mat) )
+  whichsubs<-2:length(fns)
   for ( i in whichsubs )
     {
     print( fns[i] )
@@ -115,9 +114,9 @@ whichsubs<-2:length(fns)
     if ( domotor ) ohrf<-cbind( ohrf , ohrf2, ohrf3 ) else ohrf<-cbind( ohrf )
     nuis<-read.csv(fnn[i]) 
     nuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
-    ohrf<-ohrf[5:nrow(locmat)]
-    nuis<-nuis[5:nrow(locmat),]
-    locmat<-locmat[5:nrow(locmat),]
+    ohrf<-ohrf[nbadframes:nrow(locmat)]
+    nuis<-nuis[nbadframes:nrow(locmat),]
+    locmat<-locmat[nbadframes:nrow(locmat),]
     myglobsig<-apply( locmat, FUN=mean, MARGIN=1 )
     locmat<-subset( locmat , myglobsig > boldthresh )
     nuis<-subset( nuis , myglobsig > boldthresh )
