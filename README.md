@@ -15,6 +15,8 @@ Krzysztof J. Gorgolewski, Amos J. Storkey c, Mark E. Bastin b, Ian Whittle d, Cy
 by running an organization script then a processing script 
 
 ```
+# this script uses wget which you install via homebrew on osx
+# on linux wget is native or its alternative, yum 
 ./scripts/download_task_data.sh
 # now process each subject to group space 
 homedir=${PWD}
@@ -24,11 +26,14 @@ for task in task002 task003  ; do
     for x in sub001 sub002 sub003 sub004 sub005 sub006 sub007  sub008 sub009 sub010  ; do 
       mysub=./${x}/BOLD/${task}_${myrun}/avg.nii.gz
       mybold=./${x}/BOLD/${task}_${myrun}/bold.nii.gz
-      antsMotionCorr -d 3 -a $mybold -o $mysub # average bold 
-      mkdir -p ${x}/${task}/${myrun}
-      ./scripts/ants_2_template.sh $tem $mysub $mybold ${x}/${task}/${myrun}/${x}_group  
-      cd ${homedir}/group_analysis/${x}/${task}/${myrun}/
-      ${homedir}/scripts/process_bold.R  -d $task -t 2.5 -n ${myrun} -s $x --bold ${x}_group.nii.gz
+      if [[ -s $mybold ]] ; then 
+        antsMotionCorr -d 3 -a $mybold -o $mysub # average bold 
+	gdir=${homedir}/group_analysis/${x}/${task}/${myrun}
+        mkdir -p $gdir 
+        ./scripts/ants_2_template.sh $tem $mysub $mybold ${gdir}/${x}_group  
+        cd ${gdir}
+        ${homedir}/scripts/process_bold.R  -d $task -t 2.5 -n ${myrun} -s $x --bold ${x}_group.nii.gz
+      fi 
     done					 
   done
 done
