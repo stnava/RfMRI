@@ -53,11 +53,11 @@ ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
 if ( opt$design == "task003" ) domotor<-TRUE
 print(paste("Do Motor",domotor,opt$design))
 tr<-as.numeric( opt$tr )
-# onsets<-round(stim/tr)
-blockfing = c(0, 36, 72, 108,144)
+nbadframes<-5
+blockfing = c(0, 36, 72, 108,144)+nbadframes
 blockfoot <- blockfing + 12
 blockmout <- blockfoot + 12 ; blockmout<-blockmout[1:(length(blockmout)-1)]
-blocko = c(1, 24, 48, 72, 96, 120, 144 ) # covert 
+blocko = c(1, 24, 48, 72, 96, 120, 144 )+nbadframes # covert 
 if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
 ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
 ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
