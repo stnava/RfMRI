@@ -1,76 +1,114 @@
-<!DOCTYPE html>
+<!doctype html>
+<!-- The Time Machine GitHub pages theme was designed and developed by Jon Rohan, on Feb 7, 2012. -->
+<!-- Follow him for fun. http://twitter.com/jonrohan. Tail his code on http://github.com/jonrohan -->
 <html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-  <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Rfmri : antsr reproducibility study of fmri" />
+  <link rel="stylesheet" href="stylesheets/stylesheet.css" media="screen"/>
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css"/>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script type="text/javascript" src="javascripts/script.js"></script>
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+  <title>Rfmri</title>
+  <meta name="description" content="antsr reproducibility study of fmri">
 
-    <title>Rfmri</title>
-  </head>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <body>
+</head>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/stnava/RfMRI">View on GitHub</a>
+<body>
 
-          <h1 id="project_title">Rfmri</h1>
-          <h2 id="project_tagline">antsr reproducibility study of fmri</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/stnava/RfMRI/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/stnava/RfMRI/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
+  <div class="wrapper">
+    <header>
+      <h1 class="title">Rfmri</h1>
+    </header>
+    <div id="container">
+      <p class="tagline">antsr reproducibility study of fmri</p>
+      <div id="main" role="main">
+        <div class="download-bar">
+        <div class="inner">
+          <a href="https://github.com/stnava/RfMRI/tarball/master" class="download-button tar"><span>Download</span></a>
+          <a href="https://github.com/stnava/RfMRI/zipball/master" class="download-button zip"><span>Download</span></a>
+          <a href="https://github.com/stnava/RfMRI" class="code">View Rfmri on GitHub</a>
+        </div>
+        <span class="blc"></span><span class="trc"></span>
+        </div>
+        <article class="markdown-body">
+          <h1>
 <a name="rfmri" class="anchor" href="#rfmri"><span class="octicon octicon-link"></span></a>RfMRI</h1>
 
 <p>antsr reproducibility study of fmri</p>
 
 <p><a href="https://github.com/stnava/RfMRI/raw/gh-pages/rfmri.pdf?raw">slides are here</a></p>
 
-<p>get data from:</p>
+<p>analyze data from:</p>
 
 <p>Single subject fMRI test–retest reliability metrics and confounding factors,
 Krzysztof J. Gorgolewski, Amos J. Storkey c, Mark E. Bastin b, Ian Whittle d, Cyril Pernet</p>
 
 <p><a href="http://www.gigasciencejournal.com/content/2/1/6">article</a></p>
 
-<p>by </p>
+<p>by running an organization script then a processing script </p>
 
-<pre><code>for x in  sub003 sub004 sub005 sub006 sub007  ; do 
-
-  mkdir ${x}
-
-  wget -r ftp://anonymous:password@climb.genomics.cn:/pub/10.5524/100001_101000/100051/data/data/${x}/*
-
-  mv .//climb.genomics.cn/pub/10.5524/100001_101000/100051/data/data/${x} . 
-
+<pre><code># this script uses wget which you install via homebrew on osx
+# on linux wget is native or its alternative, yum 
+./scripts/download_task_data.sh
+# now process each subject to group space 
+homedir=${PWD}
+tem=./template/template.nii.gz
+for task in task002 task003  ; do 
+  for myrun in run001 run002 ; do 
+    for x in sub001 sub002 sub003 sub004 sub005 sub006 sub007  sub008 sub009 sub010  ; do 
+      mysub=./${x}/BOLD/${task}_${myrun}/avg.nii.gz
+      mybold=./${x}/BOLD/${task}_${myrun}/bold.nii.gz
+      if [[ -s $mybold ]] ; then 
+        antsMotionCorr -d 3 -a $mybold -o $mysub # average bold 
+    gdir=${homedir}/group_analysis/${x}/${task}/${myrun}
+        mkdir -p $gdir 
+        ./scripts/ants_2_template.sh $tem $mysub $mybold ${gdir}/${x}_group  
+        cd ${gdir}
+        ${homedir}/scripts/process_bold.R  -d $task -t 2.5 -n ${myrun} -s $x --bold ${x}_group.nii.gz
+      fi 
+    done                     
+  done
 done
 </code></pre>
 
-<p>then see the pdf presentation and scripts directory for processing description</p>
-      </section>
+<p>Now we have first-level statistics done and a map to template space.  </p>
+
+<p>Next do group level statistics.</p>
+
+<pre><code># then for each task / run 
+./scripts/process_bold_group.R --tr 2.5 --design task002 \
+  --run run002 --templatemask ./template/aal.nii.gz \
+  --bold group  --output GroupTask002Run002
+</code></pre>
+
+<p>see the pdf presentation and scripts directory for processing description.</p>
+
+<p>several key-points:  groupwise analysis, nuisance variables, look at globalsignal for subset-selection, random effects, slice-timing, hrf-model selection, whitening ...</p>
+        </article>
+      </div>
     </div>
+    <footer>
+      <div class="owner">
+      <p><a href="https://github.com/stnava" class="avatar"><img src="https://2.gravatar.com/avatar/948c3f7aad7a55b0a53956aee8d25fce?d=https%3A%2F%2Fidenticons.github.com%2F7a7b65b4103ecd3659e65ecc8193851c.png&amp;r=x&amp;s=60" width="48" height="48"/></a> <a href="https://github.com/stnava">stnava</a> maintains <a href="https://github.com/stnava/RfMRI">Rfmri</a></p>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Rfmri maintained by <a href="https://github.com/stnava">stnava</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
 
-    
+      </div>
+      <div class="creds">
+        <small>This page generated using <a href="https://pages.github.com/">GitHub Pages</a><br/>theme by <a href="https://twitter.com/jonrohan/">Jon Rohan</a></small>
+      </div>
+    </footer>
+  </div>
+  <div class="current-section">
+    <a href="#top">Scroll to top</a>
+    <a href="https://github.com/stnava/RfMRI/tarball/master" class="tar">tar</a><a href="https://github.com/stnava/RfMRI/zipball/master" class="zip">zip</a><a href="" class="code">source code</a>
+    <p class="name"></p>
+  </div>
 
-  </body>
+  
+</body>
 </html>
