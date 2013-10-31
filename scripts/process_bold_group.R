@@ -64,9 +64,19 @@ if ( is.null( opt$bold ) ) {
   print( 'no bold image filename, quitting, use --bold option')
   q()
 } else {
-  fns<-Sys.glob( paste("*/",opt$design,"/",opt$run,"/*group.nii.gz",sep='') )
-  fnn<-Sys.glob( paste("*/",opt$design,"/",opt$run,"/nuis.csv",sep='') )
+  searchstring<-paste("group_analysis/sub*/",opt$design,"/",opt$run,"/*group.nii.gz",sep='')
+  fns<-Sys.glob(  searchstring )
+  searchstring<-paste("group_analysis/sub*/",opt$design,"/",opt$run,"/nuis.csv",sep='')
+  fnn<-Sys.glob(  searchstring )
+  if ( length( fns ) != length( fnn ) |  length( fnn )  == 1  )
+    {
+    print( paste("You have ",length(fns)," subjects ... fewer than 3 not recommended.  quitting if only 1.") )
+    print( paste("N-nuisance files",length( fnn )," N-bold_group.nii.gz files ", length( fns ),"." ) )
+    print( paste("OR -- Number of nuisance files does not match number of *group.nii.gz files => quitting.") )
+    q()
+    }
   print( fns )
+  print( fnn )
   fmri<-antsImageRead( fns[1]  ,4)
   ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
   smoother<-0

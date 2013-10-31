@@ -45,8 +45,8 @@ Next do group level statistics.
 ```
 # then for each task / run 
 ./scripts/process_bold_group.R --tr 2.5 --design task002 \
-  --run run002 --templatemask ./template/aal.nii.gz \
-  --bold group  --output GroupTask002Run002
+  --run run001 --templatemask ./template/aal.nii.gz \
+  --bold group  --output GroupTask002Run001
 ```
 
 see the pdf presentation and scripts directory for processing description.
