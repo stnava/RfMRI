@@ -24,7 +24,11 @@ for spar in 0.01 0.02 0.04 0.08 0.12 0.16 ; do
 for x in 2 3  ; do 
   ThresholdImage 3 GroupTask00${x}Run001sccan.nii.gz temp.nii.gz 1.e-9 1
   ThresholdImage 3 GroupTask00${x}Run002sccan.nii.gz temp2.nii.gz 1.e-9 1
-  ImageMath 3 Z${x}_${spar}_${spar2}_eval DiceAndMinDistSum temp.nii.gz temp2.nii.gz
+  ImageMath 3 Z${x}_${spar}_eval DiceAndMinDistSum temp.nii.gz temp2.nii.gz
+  ThresholdImage 3 GroupTask00${x}Run001group_betasT.nii.gz temp.nii.gz 1.e-9 1.e9
+  ThresholdImage 3 GroupTask00${x}Run002group_betasT.nii.gz temp2.nii.gz 1.e-9 1.e9
+  ImageMath 3 U${x}_${spar2}_eval DiceAndMinDistSum temp.nii.gz temp2.nii.gz
+  rm [U,Z]*mds.nii.gz [U,Z]*dice.nii.gz
 done
 ######
  let ct=${ct}+1
