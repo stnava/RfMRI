@@ -159,19 +159,19 @@ betas<-rep(NA, ncol(mat) )
 pvals<-betas
 bnuis<-data.frame( bnuis )
 print( names( bnuis ) )
-if ( FALSE ) {
+if ( TRUE ) {
 progress <- txtProgressBar( min = 0, max = length(betas), style = 3 )
 for ( i in 1:length(betas) )
   {
   vox<-mat[ , i ] 
-#  arval<-ar(vox,FALSE,2)$ar
-#  arval<-shift(vox,1)*arval[1]+shift(vox,2)*arval[2]
-#  mdl<-lm( vox ~  bhrf + arval + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3  + globalsignal + subjid , data = bnuis )
-#  betas[i]<-coefficients( summary( mdl ) )[2,3]
-  mdl <- lme(vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal , random = ( ~ 1 | subjid) , data = bnuis )
-  betas[i]<-summary(mdl)$tTable[2,4]
+  arval<-ar(vox,FALSE,2)$ar
+  arval<-shift(vox,1)*arval[1]+shift(vox,2)*arval[2]
+  mdl<-lm( vox ~  bhrf  + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3  + globalsignal + subjid , data = bnuis )
+  betas[i]<-coefficients( summary( mdl ) )[2,3]
+#  mdl <- lme(vox ~  bhrf + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal , random = ( ~ 1 | subjid) , data = bnuis )
+#  betas[i]<-summary(mdl)$tTable[2,4]
   pvals[i]<-2*pt(-abs(betas[i]),df= (nrow(mat)-1) )
-  if ( i %% 500 == 0 | i == 1 )
+  if ( i %% 5000 == 0 | i == 1 )
     {
     print(summary(mdl))
     print( paste( betas[i] , max( abs( betas ) , na.rm = T ), min( abs( pvals ) , na.rm = T ) ) )
@@ -186,6 +186,10 @@ print(paste("qvals:", min( p.adjust( pvals ) ) ) )
 betaimg<-antsImageClone( mask )
 betaimg[ mask > 0 ]<-betas
 antsImageWrite(betaimg,paste(opt$output,"group_betas.nii.gz",sep=''))
+betaimgt<-antsImageClone( mask )
+betaimgt[ mask > 0 ]<-0
+betaimgt[ betaimg > statval ]<-betaimg[ betaimg > statval ]
+antsImageWrite(betaimgt,paste(opt$output,"group_betasT.nii.gz",sep=''))
 }
 ################################################
 ##################SPARSE-CCA####################
@@ -204,13 +208,20 @@ sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
                      z=-1    , ell1=11 )
 print( sccan$eig2 )
 for ( ee in 1:length( sccan$eig1 ) ) ImageMath(3,sccan$eig1[[ee]],"abs",sccan$eig1[[ee]]) 
-antsImageWrite( sccan$eig1[[1]] ,  paste(opt$output,"sccan.nii.gz",sep="")  )
-antsImageWrite( sccan$eig1[[2]] ,  paste(opt$output,"sccan2.nii.gz",sep="")  )
-if ( length(sccan$eig1) > 2 ) antsImageWrite( sccan$eig1[[3]] ,  paste(opt$output,"sccan3.nii.gz",sep="")  )
-if ( length(sccan$eig1) > 3 ) antsImageWrite( sccan$eig1[[4]] , paste(opt$output,"sccan4.nii.gz",sep="")  )
-print( cor.test( bhrf[,1] , sccan$projections[,1] ) )
-print( cor.test( bhrf[,1] , sccan$projections[,2] ) )
-if ( length(sccan$eig1) > 2 ) print( cor.test( bhrf[,1] , sccan$projections[,3] ) )
-if ( length(sccan$eig1) > 3 ) print( cor.test( bhrf[,1] , sccan$projections[,4] ) )
+eigres<-sccan$eig1[[1]]
+cor1<-cor.test( bhrf[,1] , sccan$projections[,1] )$est
+cor2<-cor.test( bhrf[,1] , sccan$projections[,2] )$est
+if ( cor2 > cor1 ) eigres<-sccan$eig1[[2]]
+if ( length(sccan$eig1) > 2 )
+  {
+  cor3<-cor.test( bhrf[,1] , sccan$projections[,3] )$est
+  if ( cor3 > max( c( cor1, cor2 ) ) ) eigres<-sccan$eig1[[3]]
+  }
+if ( length(sccan$eig1) > 3 )
+  {
+  cor4<-cor.test( bhrf[,1] , sccan$projections[,4] )$est
+  if ( cor4 > max( c( cor1, cor2, cor3 ) ) ) eigres<-sccan$eig1[[4]]
+  }
+antsImageWrite( eigres ,  paste(opt$output,"sccan.nii.gz",sep="")  )
 antsImageWrite( as.antsImage( rmat ) , paste(opt$output,"rmat.mha",sep="") )
 write.csv( bhrf, paste(opt$output,"bhrf.csv",sep="") , quote=F , row.names=F )
