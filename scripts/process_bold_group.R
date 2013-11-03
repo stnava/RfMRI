@@ -97,9 +97,9 @@ if ( is.null( opt$bold ) ) {
   if ( domotor ) ohrf<-cbind( ohrf2 , ohrf, ohrf3 ) else ohrf<-cbind( ohrf )
   nuis<-read.csv(fnn[1])
   bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
-  bnuis<-bnuis[nbadframes:nrow(mat),]
-  ohrf<-ohrf[nbadframes:nrow(mat)]
-  mat<-mat[nbadframes:nrow(mat),]
+  bnuis<-bnuis[nbadframes:nrow(mat), ]
+  ohrf<-ohrf[nbadframes:nrow(mat), ]
+  mat<-mat[nbadframes:nrow(mat), ]
   myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
   boldthresh<-1200 # mean(myglobsig)-6*sd(myglobsig)
   mat<-subset( mat , myglobsig > boldthresh )
@@ -109,6 +109,8 @@ if ( is.null( opt$bold ) ) {
   plot( myglobsig , type='l' )
   if ( dowhite ) mat<-whiten( mat ) 
   bhrf<-ohrf
+  print("OBHRF")
+  print( dim( bhrf ) )
   subjid<-rep(1,nrow(mat) )
   whichsubs<-2:length(fns)
   for ( i in whichsubs )
@@ -122,9 +124,11 @@ if ( is.null( opt$bold ) ) {
     ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
     ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
     if ( domotor ) ohrf<-cbind( ohrf , ohrf2, ohrf3 ) else ohrf<-cbind( ohrf )
+    print( paste("OHRF",domotor ) )
+    print( dim(ohrf) )
     nuis<-read.csv(fnn[i]) 
     nuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
-    ohrf<-ohrf[nbadframes:nrow(locmat)]
+    ohrf<-ohrf[nbadframes:nrow(locmat),]
     nuis<-nuis[nbadframes:nrow(locmat),]
     locmat<-locmat[nbadframes:nrow(locmat),]
     myglobsig<-apply( locmat, FUN=mean, MARGIN=1 )
@@ -137,6 +141,8 @@ if ( is.null( opt$bold ) ) {
     if ( dowhite ) locmat<-whiten( locmat )  
     subjid<-c( subjid, rep(i,nrow(locmat)) )
     mat<-rbind( mat , locmat )
+    print( paste( "BHRF DIM" ,dim(bhrf) ) )
+    print( paste( "OHRF DIM" ,dim(ohrf) ) )
     bhrf<-rbind( bhrf, ohrf )
     bnuis<-rbind( bnuis , nuis )
   }
@@ -179,12 +185,15 @@ antsImageWrite(betaimg,paste(opt$output,"group_betas.nii.gz",sep=''))
 print("BeginResid")
 rmat<-as.matrix( residuals( lm( as.matrix(mat) ~ 1 + motion1 + motion2 + motion3 + compcorr1 + compcorr2 + compcorr3 + globalsignal + as.factor(subjid) , data = bnuis ) ) )
 print("EndResid")
-mypreds<-as.matrix( cbind( bhrf, as.numeric(  bhrf[,1] > 0 )  ) )
+mypreds<-as.matrix( cbind( bhrf , as.numeric(  bhrf[,1] ) ) )
 nv<-ncol(mypreds)
+print(paste("Get",nv,"variates"))
+sparval<-0.15
+if ( domotor ) sparval<-0.02
 sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
-                    sparseness=c( 0.15 , 0.1 ), nvecs=nv, its=25, smooth=1,
-                    perms=0, cthresh = c(10, 0) , robust=0, mycoption=0,
-                    z=-1 , ell1=1 )
+                     sparseness=c( sparval, 0.1 ), nvecs=nv, its=25, smooth=1,
+                     perms=0, cthresh = c(10, 0) , robust=0, mycoption=1,
+                     z=-1    , ell1=11 )
 print( sccan$eig2 )
 for ( ee in 1:length( sccan$eig1 ) ) ImageMath(3,sccan$eig1[[ee]],"abs",sccan$eig1[[ee]]) 
 antsImageWrite( sccan$eig1[[1]] ,  paste(opt$output,"sccan.nii.gz",sep="")  )
