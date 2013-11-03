@@ -23,6 +23,7 @@ spec = c(
   'bold', 'b', 1, "character" ," BOLD image ",
   'tr', 't', 1, "character" ," BOLD tr ",
   'run', 'n', 1, "character" ," which run ",
+  'statval', 'a', 1, "character" ," sparseness for multivariate or t-tstat for univariate - of form 0.1x3.0 where the 2nd is for unviarate",
   'output', 'o', 1, "character" ," output ")
 spec=matrix(spec,ncol=5,byrow=TRUE)
 opt = getopt(spec)
@@ -31,12 +32,19 @@ opt = getopt(spec)
 if ( is.null( opt$tr ) ) {
   print( 'no tr , automating parameters or use --tr option')
   opt$tr<-2.5
+  opt$statval<-as.character( "0.1x3.5" )
   opt$design<-"task002"
   opt$run<-"run001"
   opt$templatemask<-"./template/aal.nii.gz"
   opt$bold<-"group" 
   opt$output<-"TEST"
 }
+if ( is.null( opt$statval ) ) {
+  opt$statval<-"0.1x3.5" 
+}
+mysplit<-strsplit(opt$statval,as.character("x"))
+sparval<-as.numeric( mysplit[[1]][1] )
+statval<-as.numeric( mysplit[[1]][2] )
 if ( is.null( opt$design ) ) {
   print( 'no design , quitting , use --design option')
   q()
@@ -94,7 +102,7 @@ if ( is.null( opt$bold ) ) {
   if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
   ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
   ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
-  if ( domotor ) ohrf<-cbind( ohrf2 , ohrf, ohrf3 ) else ohrf<-cbind( ohrf )
+  if ( domotor ) ohrf<-cbind( ohrf , ohrf2, ohrf3 ) else ohrf<-cbind( ohrf )
   nuis<-read.csv(fnn[1])
   bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
   bnuis<-bnuis[nbadframes:nrow(mat), ]
