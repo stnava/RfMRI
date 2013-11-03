@@ -30,10 +30,12 @@ for task in task002 task003  ; do
       if [[ -s $mybold ]] ; then 
         antsMotionCorr -d 3 -a $mybold -o $mysub # average bold 
 	gdir=${homedir}/group_analysis/${x}/${task}/${myrun}
-        mkdir -p $gdir 
-        ${homedir}/scripts/ants_2_template.sh $tem $mysub $mybold ${gdir}/${x}_group  
-        cd ${gdir}
-        ${homedir}/scripts/process_bold.R  -d $task -t 2.5 -n ${myrun} -s $x --bold ${x}_group.nii.gz
+        if [[ ! -s ${gdir}/${x}_group.nii.gz ]] ; then 
+          mkdir -p $gdir 
+          ${homedir}/scripts/ants_2_template.sh $tem $mysub $mybold ${gdir}/${x}_group  
+          cd ${gdir}
+          ${homedir}/scripts/process_bold.R  -d $task -t 2.5 -n ${myrun} -s $x --bold ${x}_group.nii.gz
+        fi
       fi 
     done					 
   done
