@@ -4,7 +4,7 @@
 
 \usepackage{tikz}
 \usetikzlibrary{calc,positioning,automata}
-\usepackage{pstricks}
+\usepackage{pstricks,ulem}
 
 \usecolortheme{orchid}
 \useinnertheme[shadow]{rounded}
@@ -73,7 +73,6 @@ getPckg <- function(pckg) install.packages(pckg, repos = "http://cran.r-project.
 library( ANTsR )
 library( oro.nifti )
 library( visreg )
-library( ggplot2 )
 library( boot )
 library( candisc )
 library( pheatmap ) 
@@ -130,7 +129,30 @@ distributed under the\\
 }
 
 
+\begin{frame}[fragile]
+\frametitle{\antsr group-wise fMRI processing}
+\begin{tikzpicture}[overlay,thick]
+\begin{scope}[shift={(0mm,-4mm)}]
+\node[draw=blue] at (0,3) (fmri) {fMRI};
+\node[draw=blue] at (5,3) (sltim) {SliceTiming}; 
+ \node[draw=blue]  at ++(9,3) (hrf) {HRF}; 
+\node[draw=blue]  at ++(2,1) (nuis) {Motion$+$CompCor}; 
+\node[draw=blue] at ++(8,1) (wht) {Subset matrix $\rightarrow$ Whitening}; 
+\node[draw=blue] at (4,-1) (temp) {Map to template $\rightarrow$ stack matrices}; 
+ \node[draw=blue] at ++(4,-3) (ustats) {U-Statistics}; 
+ \node[draw=blue] at ++(8,-3) (mstats) {M-Statistics}; 
+ \draw[->] (fmri) to [out = 0, in = 180, looseness = 1] (sltim);
+ \draw[->] (sltim) to [out = 0, in = 180, looseness = 1] (hrf);
+ \draw[->] (sltim) to [out = 0, in = 180, looseness = 1] (nuis);
+ \draw[->] (nuis) to [out = 0, in = 180, looseness = 1] (wht);
+ \draw[->] (wht) to [out = 0, in = 180, looseness = 1] (temp);
+ \draw[->] (temp) to [out = 0, in = 180, looseness = 1] (ustats);
+ \draw[->] (temp) to [out = 0, in = 180, looseness = 1] (mstats);
+\end{scope}
+\end{tikzpicture}
+\end{frame}
 
+\begin{comment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Block Diagram: \antsr fMRI Processing}
@@ -139,21 +161,23 @@ distributed under the\\
 \node[draw=blue] at (-18,7) (sltim) {SliceTiming}; 
  \node[draw=blue]  at ++(-15,7) (hrf) {HRF}; 
 \node[draw=blue]  at ++(-20,5) (nuis) {Motion$+$CompCor}; 
-\node[draw=blue] at ++(-16,5) (hipass) {High-Pass}; 
- \node[draw=blue] at ++(-20,3) (ac) {Smooth$+$AutoCorrelation}; 
+% \node[draw=blue] at ++(-16,5) (hipass) {High-Pass}; 
+% \node[draw=blue] at ++(-20,3) (ac) {Smooth$+$AutoCorrelation}; 
+ \node[draw=blue] at ++(-20,3) (wht) {Whitening}; 
 \node[draw=blue] at ++(-16,3) (ustats) {U-Statistics}; 
  \node[draw=blue] at ++(-20,1) (mstats) {M-Statistics}; 
 \draw[->] (fmri) to [out = 0, in = 180, looseness = 1] (sltim);
  \draw[->] (sltim) to [out = 0, in = 180, looseness = 1] (hrf);
  \draw[->] (sltim) to [out = 0, in = 180, looseness = 1] (nuis);
- \draw[->] (nuis) to [out = 0, in = 180, looseness = 1] (hipass);
- \draw[->] (hipass) to [out = 0, in = 180, looseness = 1] (mstats);
- \draw[->] (hipass) to [out = 0, in = 180, looseness = 1] (ac);
- \draw[->] (ac) to [out = 0, in = 180, looseness = 1] (ustats);
+ \draw[->] (nuis) to [out = 0, in = 180, looseness = 1] (wht);
+ \draw[->] (wht) to [out = 0, in = 180, looseness = 1] (mstats);
+% \draw[->] (hipass) to [out = 0, in = 180, looseness = 1] (ac);
+ \draw[->] (wht) to [out = 0, in = 180, looseness = 1] (ustats);
 % \draw[->] (hrf) to [out = 0, in = 180, looseness = 1] (ustats);
 % \draw[->] (hrf) to [out = 0, in = 180, looseness = 1] (mstats);
 \end{tikzpicture}
 \end{frame}
+\end{comment}
 
 
 \begin{comment}
@@ -201,7 +225,11 @@ Use \R to test processing strategies for fMRI
   and \href{http://stnava.github.io/ANTs/}{\textcolor{blue}{ANTs}} motion correction.
 \item Multivariate: fMRI application of
   \href{http://www.sciencedirect.com/science/article/pii/S1053811913009841}{\textcolor{blue}{SCCAN}}
-\item Multi/Univariate use same pre-processing and includes high-pass filtering.
+\item Multi/Univariate use same pre-processing and includes outlier
+  detection based on global signal.
+\item Employ a group-wise fixed effects analysis --- requires mapping
+  to a common template space.
+\item Template is BOLD and includes AAL neuroanatomical labels.
 \end{itemize}
 \end{frame}
 
@@ -212,35 +240,42 @@ Use \R to test processing strategies for fMRI
 \frametitle{Signal Reproducibility Measurements}
 Validation Mechanisms
 \begin{itemize}[<+->]
-\item Use test-retest data as training-testing data
-\item Threshold statistical map consistently:  top x\% of $\beta$ map
-\item Signal correlation / difference across runs
-\item Peak activation
-\item Signal overlap (Dice) between clusters in thresholded beta map between two
-  runs  
-\item Minimum distance sum (MDS) between clusters in thresholded beta map between two
-  runs  
- \begin{block}{Prediction}
- Significance of training features in testing run 
- \end{block}
+\item Univar:  Threshold statistical map consistently:  \sout{top x\% of
+    $\beta$ map} $\rightarrow$ threshold at constant $\beta$ = 1.5,
+  2.0, 2.5 .... across two different runs.
+\item Multivar:  Measure spatial coincidence of sparse multivariate predictors
+  across runs. 
+\item Measure signal overlap (Dice) between clusters in thresholded beta map.
+\item \sout{Minimum distance sum (MDS) between clusters in thresholded beta map between two runs}
+\begin{block}{Prediction}
+ \sout{Significance of training features in testing run}---{\em Need
+   to refactor this ... }
+\end{block}
 \end{itemize}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Analysis Scripts}
-in RfMRI scripts directory 
+\frametitle{Analysis Scripts in \href{http://stnava.github.io/RfMRI/}{\textcolor{blue}{RfMRI}}}
 \begin{itemize}[<+->]
-\item process.sh --- calls scripts for each subject (should write your
-  own according to data organization)
+\item High-level script {\em univar\_multivar\_fmri\_consistency.sh} runs all data through to get
+    reproducibility numbers.  
 \item process\_bold.R --- bold processing for one run ... outputs hrf,
   matrices and (thresholded) beta maps
-\item for cross-validation, one needs to register the images and transfer the features
-\item ants\_compare.sh --- do a quick registration and compute
-  comparison metrics
-\item activity\_cross\_validation.R --- apply training features to
-  test data ... works for either univariate or multivariate data
+\item ants\_2\_template.sh --- maps average BOLD to template space. 
+% \item process\_bold\_group.R --- evaluates univariate and multivariate models.
+\item Models are of form: $\text{voxel} \approx \text{hrf}  + motion1 +
+  motion2 + motion3 + compcor1 + compcor2 + compcor3  +
+  globalsignal + \text{SubjectID}$
+\item Input data is the "stacked" matrix i.e. if we have $n$ subjects,
+  each with a $t \times p$ ( time by space ) matrix , then the input
+  matrix for this study would be of size  $ nt \times p$.  
+% \item for cross-validation, one needs to register the images and transfer the features
+% \item ants\_compare.sh --- do a quick registration and compute
+%  comparison metrics
+% \item activity\_cross\_validation.R --- apply training features to
+%  test data ... works for either univariate or multivariate data
 \end{itemize}
 \end{frame}
 
@@ -250,14 +285,135 @@ in RfMRI scripts directory
 \frametitle{Repeatability: Univariate}
 10 subjects 
 \begin{itemize}[<+->]
-\item Do $\beta$ maps overlap?  somewhat
-\item Do $\beta$ maps correlate?  {\em Yes} Over 0.83
-\item Are significant training features there in test data?  {\em Yes}
-  in 6 of 7.
+\item Analyzed covert verb generation and finger tapping.
+\item Do $\beta$ maps overlap?  Depends on threshold and task.
+\item Finger tapping overlap:  Max $\approx 0.4$ at threshold Y. 
+\item Covert verb:  Less sensitive to threshold.  Max $\approx 0.7$ at
+  threshold 2.  
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Univariate Overlap: Covert Verb}
+<<out.width='.75\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../U2*_eval.csv")
+diceu<-rep(NA,length(fn))
+thresh<-rep(NA, length(fn))
+for ( i in 1:length(fn) )  
+{
+diceu[i]<-read.csv(fn[i])$Dice
+sparval<-as.numeric(strsplit(fn[i],"_")[[1]][2])
+thresh[i]<-sparval
+}
+df<-data.frame( thresh=thresh, diceu=diceu)
+# mdl<-lm( diceu ~ thresh + I(thresh^2) , data = df )
+# visreg( mdl )
+p <- ggplot(data = df, aes(x = thresh, y = diceu )) +
+geom_smooth(method = "lm", se=FALSE, color="black",   formula = y ~ x
++ I(x^2)) +    geom_point()
+p
+################
+@
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Univariate Overlap: Finger Tapping}
+<<out.width='.75\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../U3*_eval.csv")
+diceu<-rep(NA,length(fn))
+thresh<-rep(NA, length(fn))
+for ( i in 1:length(fn) )  
+{
+diceu[i]<-read.csv(fn[i])$Dice
+sparval<-as.numeric(strsplit(fn[i],"_")[[1]][2])
+thresh[i]<-sparval
+}
+df<-data.frame( thresh=thresh, diceu=diceu)
+# mdl<-lm( diceu ~ thresh + I(thresh^2) , data = df )
+# visreg( mdl )
+p <- ggplot(data = df, aes(x = thresh, y = diceu )) +
+geom_smooth(method = "lm", se=FALSE, color="black",   formula = y ~ x
++ I(x^2)) +    geom_point()
+p
+################
+@
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Repeatability: Multivariate}
+10 subjects 
+\begin{itemize}[<+->]
+\item Analyzed covert verb generation and finger tapping.
+\item Do sparse-components overlap?  Depends on threshold and task.
+\item A sparse component, $u$, maximizes  $~~~~\text{PearsonCorrelation}(
+  u X, \text{HRF} v ) - \omega \| u \|_1$ \newline where we $\ell_1$ penalize non-zero
+  components of $u$ and $X$ is the BOLD matrix.
+\item Finger tapping overlap: "focal network," max $\approx 0.7$ at
+  threshold 2\% of brain.
+\item Covert verb:  "bigger network,"  max $\approx 0.8$ at
+  threshold 12\% of brain.
 \end{itemize}
 \end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Multivariate Overlap: Covert Verb}
+<<out.width='.75\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../Z2*_eval.csv")
+diceu<-rep(NA,length(fn))
+thresh<-rep(NA, length(fn))
+for ( i in 1:length(fn) )  
+{
+diceu[i]<-read.csv(fn[i])$Dice
+sparval<-as.numeric(strsplit(fn[i],"_")[[1]][2])
+thresh[i]<-sparval
+}
+df<-data.frame( thresh=thresh, diceu=diceu)
+p <- ggplot(data = df, aes(x = thresh, y = diceu )) +
+geom_smooth(method = "lm", se=FALSE, color="black",   formula = y ~ x
++ I(x^2)) +    geom_point()
+p
+# mdl<-lm( diceu ~ thresh + I(thresh^2) , data = df )
+# visreg( mdl )
+################
+@
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Multivariate Overlap: Finger Tapping}
+<<out.width='.75\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn<-Sys.glob("../Z3*_eval.csv")
+diceu<-rep(NA,length(fn))
+thresh<-rep(NA, length(fn))
+for ( i in 1:length(fn) )  
+{
+diceu[i]<-read.csv(fn[i])$Dice
+sparval<-as.numeric(strsplit(fn[i],"_")[[1]][2])
+thresh[i]<-sparval
+}
+df<-data.frame( thresh=thresh, diceu=diceu)
+p <- ggplot(data = df, aes(x = thresh, y = diceu )) +
+geom_smooth(method = "lm", se=FALSE, color="black",   formula = y ~ x
++ I(x^2)) +    geom_point()
+p
+# mdl<-lm( diceu ~ thresh + I(thresh^2) , data = df )
+# visreg( mdl )
+################
+@
+\end{frame}
+
+
+
+\begin{comment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Max $\beta$ Distribution}
@@ -278,21 +434,6 @@ m + geom_histogram(aes(y = ..density..), binwidth = 2, colour = "black",
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]
-\frametitle{Univariate Overlap Distribution}
-<<out.width='.5\\linewidth',dev='pdf',results='show',eval=TRUE,warning=FALSE,echo=FALSE>>= 
-fn<-Sys.glob("../../*/*/compareu/*y_eval.csv")
-print(paste(length(fn),"subjects"))
-diceu<-rep(NA,length(fn))
-for ( i in 1:length(fn) )  diceu[i]<-read.csv(fn[i])$Dice
-################
-qdata <- data.frame(diceu)
-m <- ggplot(qdata,aes(x=qdata[,1]))
-m + geom_histogram(aes(y = ..density..), binwidth = sd(qdata[,1])*0.5, colour = "black",
-    fill = "white") + geom_density(alpha = 0.2, fill = "#FF6666")
-@
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
@@ -419,18 +560,19 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
 \end{itemize}
 \end{frame}
 
+\end{comment}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Discussion $+$ Future Work}
 \begin{itemize}[<+->]
-\item Parameter exploration study for both univariate and multivariate
-  approaches
-\item How do smoothing and specificity interact?
-\item Autocorrelation correction may be useful 
+\item Study impact of pre-processing for both univariate and multivariate
+  approaches.
+\item Random effects in univariate?  Optimized smoothing in univariate?
 \item Test decoding of 3 simple tasks with both univariate and
-  multivariate feature selection
-\item Look at group consistency
+  multivariate feature selection.   
+\item Given results of above, process Haxby data. 
 \end{itemize}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
