@@ -259,11 +259,11 @@ Validation Mechanisms
 \begin{frame}[fragile]
 \frametitle{Analysis Scripts in \href{http://stnava.github.io/RfMRI/}{\textcolor{blue}{RfMRI}}}
 \begin{itemize}[<+->]
-\item High-level script {\em univar\_multivar\_fmri\_consistency.sh} runs all data through to get
-    reproducibility numbers.  
+\item ants\_2\_template.sh --- maps average BOLD to template space. 
 \item process\_bold.R --- bold processing for one run ... outputs hrf,
   matrices and (thresholded) beta maps
-\item ants\_2\_template.sh --- maps average BOLD to template space. 
+\item After above steps, {\em univar\_multivar\_fmri\_consistency.sh} produces group-wise
+    reproducibility numbers.  
 % \item process\_bold\_group.R --- evaluates univariate and multivariate models.
 \item Models are of form: $\text{voxel} \approx \text{hrf}  + motion1 +
   motion2 + motion3 + compcor1 + compcor2 + compcor3  +
@@ -424,7 +424,7 @@ if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
   {
   tem<-antsImageRead(temfn,3)
   i1<-antsImageRead(fn1,3)
-  myth<-paste("0.0001x",as.character(max(i1[ i1 > 0 ])  ) )
+  myth<-paste("0.00005x",as.character(max(i1[ i1 > 0 ])  ) )
   plotANTsImage( myantsimage=tem, functional=list( i1 ) ,
     slices="6x25x1", threshold=myth ,axis=0, color=c("red") ,
     outname="./covvizm_run1.jpg")
@@ -457,7 +457,7 @@ if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
   {
   tem<-antsImageRead(temfn,3)
   i1<-antsImageRead(fn1,3)
-  myth<-paste("0.0001x",as.character(max(i1[ i1 > 0 ]) ) )
+  myth<-paste("0.00005x",as.character(max(i1[ i1 > 0 ]) ) )
   plotANTsImage( myantsimage=tem, functional=list( i1 ) ,
     slices="19x25x1", threshold=myth ,axis=0, color=c("red") ,
     outname="./ftapvizm_run1.jpg")
@@ -478,7 +478,78 @@ if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
     \includegraphics[width=0.9\textwidth]{./src/ftapvizm.jpg}
 \end{figure}
 \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Finger Tapping: M-Spatial Maps 2}
+<<ftapviz2,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn1<-"../OptGroupTask003Run001sccan.nii.gz"
+fn2<-"../OptGroupTask003Run002sccan.nii.gz"
+if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
+  {
+  tem<-antsImageRead(temfn,3)
+  i1<-antsImageRead(fn1,3)
+  i2<-antsImageRead(fn2,3)
+  olimg<-antsImageClone( i1 )
+  olimg[ olimg  >= 0  ] <- 0
+  olimg[ i1 > 1.e-5 & i2 > 1.e-5 ] <- 3
+  olimg1<-antsImageClone( i1 )
+  olimg1[ olimg1  >= 0  ] <- 0
+  olimg1[ i1 > 1.e-5 ] <- 1
+  olimg2<-antsImageClone( i2 )
+  olimg2[ olimg2  >= 0  ] <- 0
+  olimg2[ i2 > 1.e-5 ] <- 2
+  plotANTsImage( myantsimage=tem, functional=list( olimg1, olimg2, olimg ) ,
+    slices="19x25x1", threshold=c("1x3") ,axis=0, color=c("red","blue","green") ,
+    outname="./ftapvizm2.jpg")
+  }
+@
+\begin{figure}[h!]
+  \caption{Finger tapping reproducibility --- 3 color, red:run1,
+    blue:run2, green:both. Dice $\approx 0.87$.}
+  \centering
+    \includegraphics[width=0.95\textwidth]{./src/ftapvizm2.jpg}
+\end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Covert Verb Generation: M-Spatial Maps 2}
+<<covvviz2,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn1<-"../OptGroupTask002Run001sccan.nii.gz"
+fn2<-"../OptGroupTask002Run002sccan.nii.gz"
+if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
+  {
+  tem<-antsImageRead(temfn,3)
+  i1<-antsImageRead(fn1,3)
+  i2<-antsImageRead(fn2,3)
+  olimg<-antsImageClone( i1 )
+  olimg[ olimg  >= 0  ] <- 0
+  olimg[ i1 > 1.e-5 & i2 > 1.e-5 ] <- 3
+  olimg1<-antsImageClone( i1 )
+  olimg1[ olimg1  >= 0  ] <- 0
+  olimg1[ i1 > 1.e-5 ] <- 1
+  olimg2<-antsImageClone( i2 )
+  olimg2[ olimg2  >= 0  ] <- 0
+  olimg2[ i2 > 1.e-5 ] <- 2
+  plotANTsImage( myantsimage=tem, functional=list( olimg1, olimg2, olimg ) ,
+    slices="6x25x1", threshold=c("1x3") ,axis=0, color=c("red","blue","green") ,
+    outname="./covvizm2.jpg")
+  }
+@
+\begin{figure}[h!]
+  \caption{Covert verb generation reproducibility --- 3 color, red:run1,
+    blue:run2, green:both.  Dice $\approx 0.83$.}
+  \centering
+    \includegraphics[width=0.95\textwidth]{./src/covvizm2.jpg}
+\end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \begin{comment}
