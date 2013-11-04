@@ -9,7 +9,7 @@
 \usecolortheme{orchid}
 \useinnertheme[shadow]{rounded}
 \setbeamertemplate{items}[default]
-
+\setbeamercovered{transparent}
 \usefonttheme[onlymath]{serif}
 \setbeamertemplate{navigation symbols}{}
 \setbeamerfont{smallfont}{size=\small}
@@ -565,7 +565,26 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Discussion $+$ Future Work}
+\frametitle{Discussion}
+\begin{itemize}[<+->]
+\item Multivariate approach appears to be more repeatable: 0.8 vs
+  0.7 (covert verb) and 0.7 vs 0.4 (finger tapping).
+\item This may be due to the data-driven and spatially-informed
+  smoothing within the multivariate optimization.
+\item Optimized spatial smoothing for univariate data may work better
+  .... Easy to re-run and test but takes time. 
+\item SCCAN allows combination of block and HRF models to drive
+  prediction --- may also help reproducibility. 
+\item Did not yet test explicit prediction.  
+\item Many processing decisions made by observation, knowledge from
+  literature and educated guesses.
+\end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Future Work}
 \begin{itemize}[<+->]
 \item Study impact of pre-processing for both univariate and multivariate
   approaches.
