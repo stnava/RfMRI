@@ -259,7 +259,7 @@ Validation Mechanisms
 \begin{frame}[fragile]
 \frametitle{Analysis Scripts in \href{http://stnava.github.io/RfMRI/}{\textcolor{blue}{RfMRI}}}
 \begin{itemize}[<+->]
-\item ants\_2\_template.sh --- maps average BOLD to template space. 
+\item ants\_2\_template.sh --- maps BOLD to template space. 
 \item process\_bold.R --- bold processing for one run ... outputs hrf,
   matrices and (thresholded) beta maps
 \item After above steps, {\em univar\_multivar\_fmri\_consistency.sh} produces group-wise
@@ -413,80 +413,12 @@ p
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]
-\frametitle{Covert Verb Generation: M-Spatial Maps }
-<<covvviz,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
-fn1<-"../OptGroupTask002Run001sccan.nii.gz"
-fn2<-"../OptGroupTask002Run002sccan.nii.gz"
-temfn<-"../template/template.nii.gz"
-if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
-  {
-  tem<-antsImageRead(temfn,3)
-  i1<-antsImageRead(fn1,3)
-  myth<-paste("0.00005x",as.character(max(i1[ i1 > 0 ])  ) )
-  plotANTsImage( myantsimage=tem, functional=list( i1 ) ,
-    slices="6x25x1", threshold=myth ,axis=0, color=c("red") ,
-    outname="./covvizm_run1.jpg")
-  i2<-antsImageRead(fn2,3)
-  plotANTsImage( myantsimage=tem, functional=list( i2 ) ,
-    slices="6x25x1", threshold=myth ,axis=0,color=c("blue") )
-  plotANTsImage( myantsimage=tem, functional=list( i1 , i2 ) ,
-    slices="6x25x1", threshold=myth ,axis=0, color=c("red","blue") ,
-    outname="./covvizm.jpg" )
-  }
-@
-\begin{figure}[h!]
-  \caption{Covert verb generation reproducibility --- red run 1 (top row), blue$+$red
-    run 1 $+$ run2 (lower row)}
-  \centering
-    \includegraphics[width=0.9\textwidth]{./src/covvizm_run1.jpg}\\
-  \centering
-    \includegraphics[width=0.9\textwidth]{./src/covvizm.jpg}
-\end{figure}
-\end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Finger Tapping: M-Spatial Maps }
-<<ftapviz,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
-fn1<-"../OptGroupTask003Run001sccan.nii.gz"
-fn2<-"../OptGroupTask003Run002sccan.nii.gz"
-if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
-  {
-  tem<-antsImageRead(temfn,3)
-  i1<-antsImageRead(fn1,3)
-  myth<-paste("0.00005x",as.character(max(i1[ i1 > 0 ]) ) )
-  plotANTsImage( myantsimage=tem, functional=list( i1 ) ,
-    slices="19x25x1", threshold=myth ,axis=0, color=c("red") ,
-    outname="./ftapvizm_run1.jpg")
-  i2<-antsImageRead(fn2,3)
-  plotANTsImage( myantsimage=tem, functional=list( i2 ) ,
-    slices="19x25x1", threshold=myth ,axis=0,color=c("blue") )
-  plotANTsImage( myantsimage=tem, functional=list( i1 , i2 ) ,
-    slices="19x25x1", threshold=myth ,axis=0, color=c("red","blue") ,
-    outname="./ftapvizm.jpg")
-  }
-@
-\begin{figure}[h!]
-  \caption{Finger tapping reproducibility --- red run 1 (top row), blue$+$red
-    run 1 $+$ run2 (lower row)}
-  \centering
-    \includegraphics[width=0.9\textwidth]{./src/ftapvizm_run1.jpg}\\
-  \centering
-    \includegraphics[width=0.9\textwidth]{./src/ftapvizm.jpg}
-\end{figure}
-\end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]
-\frametitle{Finger Tapping: M-Spatial Maps 2}
+\frametitle{Finger Tapping: M-Spatial Maps}
 <<ftapviz2,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+temfn<-"../template/template.nii.gz"
 fn1<-"../OptGroupTask003Run001sccan.nii.gz"
 fn2<-"../OptGroupTask003Run002sccan.nii.gz"
 if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
@@ -519,7 +451,7 @@ if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Covert Verb Generation: M-Spatial Maps 2}
+\frametitle{Covert Verb Generation: M-Spatial Maps}
 <<covvviz2,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
 fn1<-"../OptGroupTask002Run001sccan.nii.gz"
 fn2<-"../OptGroupTask002Run002sccan.nii.gz"
@@ -546,7 +478,7 @@ if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
   \caption{Covert verb generation reproducibility --- 3 color, red:run1,
     blue:run2, green:both.  Dice $\approx 0.83$.}
   \centering
-    \includegraphics[width=0.95\textwidth]{./src/covvizm2.jpg}
+    \includegraphics[width=1.0\textwidth]{./src/covvizm2.jpg}
 \end{figure}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -726,6 +658,8 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
 \begin{itemize}[<+->]
 \item SCCAN allows combination of block and HRF models to drive
   prediction --- may also help reproducibility. 
+\item Subject-level reproducibility: \textit{not bad} (needs work to
+  quantify further via prediction).
 \item Did not yet test explicit prediction.  
 \item Many processing decisions made by observation, knowledge from
   literature and educated guesses.
@@ -742,7 +676,7 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
   approaches.
 \item Random effects in univariate?  Optimized smoothing in univariate?
 \item Test decoding of 3 simple tasks with both univariate and
-  multivariate feature selection.   
+  multivariate feature selection: \textit{``dictionary'' or ``template''?}
 \item Given results of above, process Haxby data. 
 \end{itemize}
 \end{frame}
