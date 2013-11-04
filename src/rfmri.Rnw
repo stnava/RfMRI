@@ -53,9 +53,9 @@
 % \usecolortheme{beaver}
 % \usetheme{Goettingen}
 % \usecolortheme{rose}
-\newcommand{\R}{\emph{R}~}
-\newcommand{\knitr}{\emph{knitr}~}
-\newcommand{\antsr}{\emph{ANTsR}~}
+\newcommand{\R}{\textit{R}~}
+\newcommand{\knitr}{\textit{knitr}~}
+\newcommand{\antsr}{\textit{ANTsR}~}
 \usepackage{hyperref}
   \hypersetup{
   	colorlinks=true
@@ -80,7 +80,7 @@ library(ggplot2)
 myregion<-"CentralSulcus"
 @
 
-\title[fMRI Reproducibility in R]{fMRI Reproducibility in R}
+\title[fMRI Reproducibility in R]{fMRI Reproducibility in \R}
 
 \author{\textbf{Brian B. Avants}}
 \institute[PENN]
@@ -413,6 +413,74 @@ p
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Covert Verb Generation: M-Spatial Maps }
+<<covvviz,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn1<-"../OptGroupTask002Run001sccan.nii.gz"
+fn2<-"../OptGroupTask002Run002sccan.nii.gz"
+temfn<-"../template/template.nii.gz"
+if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
+  {
+  tem<-antsImageRead(temfn,3)
+  i1<-antsImageRead(fn1,3)
+  myth<-paste("0.0001x",as.character(max(i1[ i1 > 0 ])  ) )
+  plotANTsImage( myantsimage=tem, functional=list( i1 ) ,
+    slices="6x25x1", threshold=myth ,axis=0, color=c("red") ,
+    outname="./covvizm_run1.jpg")
+  i2<-antsImageRead(fn2,3)
+  plotANTsImage( myantsimage=tem, functional=list( i2 ) ,
+    slices="6x25x1", threshold=myth ,axis=0,color=c("blue") )
+  plotANTsImage( myantsimage=tem, functional=list( i1 , i2 ) ,
+    slices="6x25x1", threshold=myth ,axis=0, color=c("red","blue") ,
+    outname="./covvizm.jpg" )
+  }
+@
+\begin{figure}[h!]
+  \caption{Covert verb generation reproducibility --- red run 1 (top row), blue$+$red
+    run 1 $+$ run2 (lower row)}
+  \centering
+    \includegraphics[width=0.9\textwidth]{./src/covvizm_run1.jpg}\\
+  \centering
+    \includegraphics[width=0.9\textwidth]{./src/covvizm.jpg}
+\end{figure}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Finger Tapping: M-Spatial Maps }
+<<ftapviz,out.width='.8\\linewidth',dev='pdf',results='hide',eval=TRUE,warning=FALSE,echo=FALSE>>= 
+fn1<-"../OptGroupTask003Run001sccan.nii.gz"
+fn2<-"../OptGroupTask003Run002sccan.nii.gz"
+if ( file.exists( fn1 ) &  file.exists( fn2 ) & file.exists(temfn) )
+  {
+  tem<-antsImageRead(temfn,3)
+  i1<-antsImageRead(fn1,3)
+  myth<-paste("0.0001x",as.character(max(i1[ i1 > 0 ]) ) )
+  plotANTsImage( myantsimage=tem, functional=list( i1 ) ,
+    slices="19x25x1", threshold=myth ,axis=0, color=c("red") ,
+    outname="./ftapvizm_run1.jpg")
+  i2<-antsImageRead(fn2,3)
+  plotANTsImage( myantsimage=tem, functional=list( i2 ) ,
+    slices="19x25x1", threshold=myth ,axis=0,color=c("blue") )
+  plotANTsImage( myantsimage=tem, functional=list( i1 , i2 ) ,
+    slices="19x25x1", threshold=myth ,axis=0, color=c("red","blue") ,
+    outname="./ftapvizm.jpg")
+  }
+@
+\begin{figure}[h!]
+  \caption{Finger tapping reproducibility --- red run 1 (top row), blue$+$red
+    run 1 $+$ run2 (lower row)}
+  \centering
+    \includegraphics[width=0.9\textwidth]{./src/ftapvizm_run1.jpg}\\
+  \centering
+    \includegraphics[width=0.9\textwidth]{./src/ftapvizm.jpg}
+\end{figure}
+\end{frame}
+
+
+
 \begin{comment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
@@ -563,6 +631,9 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
 \end{comment}
 
 
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Discussion}
@@ -571,8 +642,17 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
   0.7 (covert verb) and 0.7 vs 0.4 (finger tapping).
 \item This may be due to the data-driven and spatially-informed
   smoothing within the multivariate optimization.
-\item Optimized spatial smoothing for univariate data may work better
-  .... Easy to re-run and test but takes time. 
+\item Optimized spatial smoothing for univariate data may work better.
+\item Spatiotemporal smoothing improves overlap for both univariate (vg:0.74, ft:0.38)
+  \& multivariate (vg:0.83, ft: 0.87) approaches.
+\end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Discussion 2}
+\begin{itemize}[<+->]
 \item SCCAN allows combination of block and HRF models to drive
   prediction --- may also help reproducibility. 
 \item Did not yet test explicit prediction.  
@@ -581,6 +661,7 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
 \end{itemize}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]

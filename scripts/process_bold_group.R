@@ -22,6 +22,7 @@ spec = c(
   'design', 'd', 1, "character" ," design matrix ",
   'bold', 'b', 1, "character" ," BOLD image ",
   'tr', 't', 1, "character" ," BOLD tr ",
+  'smoother', 'm', 0, "character" ," BOLD spatial smoothing ",
   'run', 'n', 1, "character" ," which run ",
   'help'     , 'h', 0, "logical" ," print the help ", 
   'statval', 'a', 1, "character" ," sparseness for multivariate or t-tstat for univariate - of form 0.1x3.0 where the 2nd is for unviarate",
@@ -104,6 +105,9 @@ if ( is.null( opt$bold ) ) {
   fmri<-antsImageRead( fns[1]  ,4)
   ImageMath(4,fmri,'SliceTimingCorrection',fmri,0)
   smoother<-0
+  if ( ! is.null( opt$smoother ) ) {
+    smoother <- as.numeric( opt$smoother )
+  }
   if ( smoother > 0.001 ) SmoothImage(4,fmri,smoother,fmri)
   dowhite<-T
   mat<-timeseries2matrix( fmri, mask )
@@ -226,13 +230,32 @@ eigres<-sccan$eig1[[1]]
 cor1<-abs( cor.test( bhrf[,1] , sccan$projections[,1] )$est )
 cor2<-abs( cor.test( bhrf[,1] , sccan$projections[,2] )$est )
 print( paste("cor1",cor1  ))
+for ( ss in unique( subjid ) )
+  {
+    corsN<-abs( cor.test( bhrf[ subjid == ss ,1] , sccan$projections[ subjid == ss ,1] )$est )
+    print( paste(ss,"corsN",corsN  ))
+  }
 print( paste("cor2",cor2  ))
-if ( cor2 > cor1 ) eigres<-sccan$eig1[[2]]
+if ( cor2 > cor1 ) {
+  eigres<-sccan$eig1[[2]]
+  for ( ss in unique( subjid ) )
+    {
+    corsN<-abs( cor.test( bhrf[ subjid == ss ,1] , sccan$projections[ subjid == ss ,2] )$est )
+    print( paste(ss,"corsN",corsN  ))
+    }
+}
 if ( length(sccan$eig1) > 2 )
   {
   cor3<-abs( cor.test( bhrf[,1] , sccan$projections[,3] )$est )
   print( paste("cor3",cor3  ))
-  if ( cor3 > max( c( cor1, cor2 ) ) ) eigres<-sccan$eig1[[3]]
+  if ( cor3 > max( c( cor1, cor2 ) ) ) {
+    eigres<-sccan$eig1[[3]]
+    for ( ss in unique( subjid ) )
+      {
+        corsN<-abs( cor.test( bhrf[ subjid == ss ,1] , sccan$projections[ subjid == ss ,3] )$est )
+        print( paste(ss,"corsN",corsN  ))
+      }
+    }
   }
 if ( length(sccan$eig1) > 3 )
   {
