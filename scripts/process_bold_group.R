@@ -23,10 +23,26 @@ spec = c(
   'bold', 'b', 1, "character" ," BOLD image ",
   'tr', 't', 1, "character" ," BOLD tr ",
   'run', 'n', 1, "character" ," which run ",
+  'help'     , 'h', 0, "logical" ," print the help ", 
   'statval', 'a', 1, "character" ," sparseness for multivariate or t-tstat for univariate - of form 0.1x3.0 where the 2nd is for unviarate",
   'output', 'o', 1, "character" ," output ")
 spec=matrix(spec,ncol=5,byrow=TRUE)
 opt = getopt(spec)
+if ( !is.null(opt$help) || length(opt) == 1 ) {
+#print a friendly message and exit with a non-zero error code
+cat("\n")
+cat(paste(self,"\n"))
+for ( x in 1:nrow(spec) ) {
+cat("\n")
+longopt<-paste("--",spec[x,1],sep='')
+shortopt<-paste("-",spec[x,2],sep='')
+hlist<-paste(shortopt,"|",longopt,spec[x,5],"\n \n")
+# print(hlist,quote=F)
+cat(format(hlist, width=40, justify = c("left")))
+}
+q(status=1);
+}
+
 #../scripts/process_bold_group.R --tr 2.5 --design task002 --run run002
 #  --templatemask ./template/aal.nii.gz  --bold group  --output W ;  
 if ( is.null( opt$tr ) ) {
@@ -207,17 +223,21 @@ sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
 print( sccan$eig2 )
 for ( ee in 1:length( sccan$eig1 ) ) ImageMath(3,sccan$eig1[[ee]],"abs",sccan$eig1[[ee]]) 
 eigres<-sccan$eig1[[1]]
-cor1<-cor.test( bhrf[,1] , sccan$projections[,1] )$est
-cor2<-cor.test( bhrf[,1] , sccan$projections[,2] )$est
+cor1<-abs( cor.test( bhrf[,1] , sccan$projections[,1] )$est )
+cor2<-abs( cor.test( bhrf[,1] , sccan$projections[,2] )$est )
+print( paste("cor1",cor1  ))
+print( paste("cor2",cor2  ))
 if ( cor2 > cor1 ) eigres<-sccan$eig1[[2]]
 if ( length(sccan$eig1) > 2 )
   {
-  cor3<-cor.test( bhrf[,1] , sccan$projections[,3] )$est
+  cor3<-abs( cor.test( bhrf[,1] , sccan$projections[,3] )$est )
+  print( paste("cor3",cor3  ))
   if ( cor3 > max( c( cor1, cor2 ) ) ) eigres<-sccan$eig1[[3]]
   }
 if ( length(sccan$eig1) > 3 )
   {
-  cor4<-cor.test( bhrf[,1] , sccan$projections[,4] )$est
+  cor4<-abs(cor.test( bhrf[,1] , sccan$projections[,4] )$est )
+  print( paste("cor4",cor4  ))
   if ( cor4 > max( c( cor1, cor2, cor3 ) ) ) eigres<-sccan$eig1[[4]]
   }
 antsImageWrite( eigres ,  paste(opt$output,"sccan.nii.gz",sep="")  )
