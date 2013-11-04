@@ -200,8 +200,6 @@ print("EndResid")
 mypreds<-as.matrix( cbind( bhrf , as.numeric(  bhrf[,1] ) ) )
 nv<-ncol(mypreds)
 print(paste("Get",nv,"variates"))
-sparval<-0.15
-if ( domotor ) sparval<-0.02
 sccan<-sparseDecom2( inmatrix=list( rmat , mypreds ), inmask = c( mask , NA ) ,
                      sparseness=c( sparval, 0.1 ), nvecs=nv, its=25, smooth=1,
                      perms=0, cthresh = c(10, 0) , robust=0, mycoption=1,
