@@ -668,6 +668,26 @@ for ( i in 1:length(fn) ) print(data.frame(read.csv(fn[i],h=T)[,c(1,3,5)]))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Summary of Findings}
+\begin{problock}{Novel BOLD-fMRI study comparing the reliability of multivariate
+and univariate group-level analysis}
+\begin{itemize}[<+->]
+\item Both finger-tapping and CovVerbGen result in Dice overlap $>
+  0.83$.  The upper limit in reliability is \textit{unknown}.
+  \footnote{Including GlobalSignal appears to increase or, at minimum,
+    not hurt, reliability.}
+\item CovVerbGen involves a more distributed network of effects and is
+  therefore less reliable yet still shows a strong degree both
+  group-level and subject-level consistency.
+\end{itemize}
+\end{problock}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Future Work}
