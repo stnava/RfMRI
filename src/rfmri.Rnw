@@ -352,7 +352,7 @@ p
 \item Analyzed covert verb generation and finger tapping.
 \item Do sparse-components overlap?  Depends on threshold and task.
 \item A sparse component, $u$, maximizes  $~~~~\text{PearsonCorrelation}(
-  u X, \text{HRF} v ) - \omega \| u \|_1$ \newline where we $\ell_1$ penalize non-zero
+   X u, \text{HRF}_\text{model(s)} v ) - \omega \| u \|_1$ \newline where we $\ell_1$ penalize non-zero
   components of $u$ and $X$ is the BOLD matrix.
 \item Finger tapping overlap: "focal network," max $\approx 0.7$ at
   threshold 2\% of brain.
@@ -680,8 +680,8 @@ and univariate group-level analysis}
   \footnote{Including GlobalSignal appears to increase or, at minimum,
     not hurt, reliability.}
 \item CovVerbGen involves a more distributed network of effects and is
-  therefore less reliable yet still shows a strong degree both
-  group-level and subject-level consistency.
+  therefore less reliable yet is consistent @ both
+  group-level and subject-level.
 \end{itemize}
 \end{problock}
 \end{frame}
