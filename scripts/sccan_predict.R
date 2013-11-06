@@ -2,10 +2,10 @@ library(ANTsR)
 library( randomForest )
 library( vegan )
 off<-( 2 ) 
-mysub<-"sub003"
+mysub<-"sub009"
 myrun<-"run001"
 myrun2<-"run002"
-tasknum<-2
+tasknum<-3
 if ( tasknum == 3 ) domotor<-TRUE else domotor <- FALSE 
 mytask<-paste("task00",tasknum,sep='')
 mybasefn<-paste(".//group_analysis",mysub,mytask,myrun,"",sep='/')
@@ -42,7 +42,7 @@ rfmri2<-( as.matrix( residuals( lm( fmri2  ~ as.matrix( nu2 ) ) ) ) )
 template<-whiten( rfmri1[ mytem , ] ) + whiten( rfmri1[ mytem2 , ] )
 # dev.new()
 ntests<-( nrow(fmri1)-nrow(template) )
-myccas<-rep(NA,ntests)
+myccas<-rep(0,ntests)
 ncomp<-2
 refsvd<-svd( template )$u[,2:ncomp]
 templateproj<- template %*% mask2vec 
@@ -58,3 +58,19 @@ for ( x in (off+1):ntests )
   plot( myccas, type='l', ylim=c(yv,1))
   points( ( hrf1[,1] - shift(hrf1[,1],1) ) > 0.9 ,type='l',col='red')
   }
+###########################
+if ( myrun2 == "run001" )
+  {
+  print("Training")
+  binpred <-as.factor( ( hrf1[,1] > 0 )[1:length(myccas)] )
+  mydf<-data.frame( myccas=myccas , binpred=binpred )
+  my.rf<-randomForest( binpred ~ myccas , data=mydf )
+  } else {
+  print("Testing")
+  binpred2 <-as.factor( ( hrf1[,1] > 0 ) )[1:length(myccas)]
+  mydf2<-data.frame( myccas=myccas )
+  pp<-predict(  my.rf  , newdata = mydf2 )
+  print( sum( abs( as.numeric(pp)- as.numeric( binpred2 ) ) )/length(pp) )
+  }
+
+
