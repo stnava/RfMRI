@@ -1,8 +1,9 @@
 library( ANTsR )
 library( randomForest)
 library( vegan )
+takeoutresid <- FALSE
 print("a random forest test on fmri")
-subnum<-"009"
+subnum<-"010"
 setwd(paste("/Users/stnava/data/data_gorgolewski/RfMRI/group_analysis/sub",subnum,"/task003/run001",sep=''))
 fmri<-antsImageRead(paste('sub',subnum,'_group.nii.gz',sep=''),4)
 tr<-2.5
@@ -33,7 +34,7 @@ selector[1:(nbadframes-1)] <- FALSE
 mat<-subset( mat , selector )
 nuis<-subset( nuis , selector )
 myhrf<-subset( ohrf , selector )
-mat<-( as.matrix( residuals( lm( mat  ~ as.matrix( nuis ) ) ) ) )
+if ( takeoutresid )  mat<-( as.matrix( residuals( lm( mat  ~ as.matrix( nuis ) ) ) ) )
 myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
 mat[,1]<-myglobsig
 plot(   myhrf[,1], type='l' )
@@ -95,7 +96,7 @@ selector2[1:(nbadframes-1)] <- FALSE
 mat2<-subset( mat2 , selector )
 nuis2<-subset( nuis2 , selector )
 myhrf2<-subset( ohrf , selector )
-mat2<-( as.matrix( residuals( lm( mat2  ~ as.matrix( nuis2 ) ) ) ) )
+if ( takeoutresid ) mat2<-( as.matrix( residuals( lm( mat2  ~ as.matrix( nuis2 ) ) ) ) )
 myglobsig2<-apply( mat2, FUN=mean, MARGIN=1 )
 mat2[,1]<-myglobsig2
 mysccanimages<-imageListToMatrix( imageList=ff$eig1, mask=mask)
