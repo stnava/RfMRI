@@ -1,8 +1,8 @@
 library( ANTsR )
 library( randomForest)
 library( vegan )
-takeoutresid <- FALSE
-print("a random forest test on fmri")
+takeoutresid <- TRUE
+print(paste("a random forest test on fmri ... takeoutresid? ",takeoutresid))
 subnum<-"010"
 setwd(paste("/Users/stnava/data/data_gorgolewski/RfMRI/group_analysis/sub",subnum,"/task003/run001",sep=''))
 fmri<-antsImageRead(paste('sub',subnum,'_group.nii.gz',sep=''),4)
@@ -53,32 +53,36 @@ for ( i in 5:nrow(myhrf) )
 points( mysums, type='l', col='green' )
 binpreds <- as.factor( binpreds )
 myglobsigresid<-residuals( lm( myglobsig ~ myhrf ) )
-threshinit<-FALSE
+threshinit<-3
 img1<-antsImageClone( mask )
 img1[ mask > 0 ]<- myhrf[,1] %*% mat 
-if ( threshinit ) img1[ img1 < mean(img1) ] <- 0
+if ( threshinit > 0 ) img1[ img1 <  (mean(img1)+threshinit*sd(img1)) ] <- 0
 img2<-antsImageClone( mask )
 img2[ mask > 0 ]<- myhrf[,2] %*% mat 
-if ( threshinit ) img2[ img2 < mean(img2) ] <- 0
+if ( threshinit > 0 ) img2[ img2 <  (mean(img2)+threshinit*sd(img2)) ] <- 0
 img3<-antsImageClone( mask )
 img3[ mask > 0 ]<- myhrf[,3] %*% mat 
-if ( threshinit ) img3[ img3 < mean(img3) ] <- 0
+if ( threshinit > 0 ) img3[ img3 <  (mean(img3)+threshinit*sd(img3)) ] <- 0
 img4<-antsImageClone( mask )
 img4[ mask > 0 ]<- myglobsigresid %*% mat
-if ( threshinit ) img4[ img4 < mean(img4) ] <- 0
-initlist<-list( img1,img2,img3,img4 )
-ff<-sparseDecom2( inmatrix=list(mat, cbind(myhrf,myglobsigresid)), inmask=list(mask,NA),
-                  perms=0, its=45,
-                  mycoption=1, sparseness=c(-0.1,-0.35) ,nvecs=6,
-                  smooth=1, cthresh=c(10,0),ell1 = 11 , z=-1 )
-#                ,initializationList = initlist )
+if ( threshinit > 0) img4[ img4 < (mean(img4)+threshinit*sd(img4))  ] <- 0
+img5<-antsImageClone( mask )
+img5[ mask > 0 ]<- svd( mat )$u[5,] %*% mat
+if ( threshinit > 0 ) img5[ img5 < (mean(img5)+threshinit*sd(img5)) ] <- 0
+initlist<-list( img1,img2,img3,img4, img5 )
+ff<-sparseDecom2( inmatrix=list(mat, cbind(myhrf,myglobsigresid)), inmask=list(mask,NA), perms=0, its=22,mycoption=1, sparseness=c( -0.1, -0.2 ) , nvecs= length( initlist ) , smooth=1, cthresh=c(10,0), ell1 = 11 , z=-1 , initializationList=initlist )
+print( ff$eig2 )
+# ff<-sparseDecom( inmatrix=mat, inmask=mask,its=5,
+#                  mycoption=1, sparseness=c(-0.1) ,nvecs=11, 
+#                  smooth=1, cthresh=10, z=-1 )
+# names(ff)[2]<-"eig1"
+# names(ff)[3]<-"projections"
 for ( i in 1:length(ff$eig1) ) {
   visimg<-antsImageClone( ff$eig1[[i]] )
   ImageMath(3,visimg,'abs',visimg)
   ImageMath(3,visimg,'Normalize',visimg)
   plotANTsImage( myantsimage=temimg, functional=list(visimg) , slices="2x25x1", ,axis=0, color=c("red") , threshold="0.01x1", outname=paste("temp",i,".jpg",sep='') ) 
 }
-print( ff$eig2 )
 mydf<-data.frame( binpreds = myhrf[,1] , imgs = ff$projections )
 my.rf1<-randomForest( binpreds ~ . , data=mydf )
 mydf<-data.frame( binpreds = myhrf[,2] , imgs = ff$projections )
@@ -103,18 +107,18 @@ mysccanimages<-imageListToMatrix( imageList=ff$eig1, mask=mask)
 mysccanpreds <-decostand( mat2 , method="standardize" , MARGIN=2 )  %*% t( mysccanimages )
 colnames( mysccanpreds )<-colnames( ff$projections )
 mydf2<-data.frame(  imgs = mysccanpreds )
-
-mypred<-predict( my.rf1 , newdata = mydf2 )
-print( cor.test(  as.numeric(my.rf1$predicted) , myhrf2[,1] ) )
+########################################################################################################
+mypred1<-predict( my.rf1 , newdata = mydf2 )
+mypred2<-predict( my.rf2 , newdata = mydf2 )
+mypred3<-predict( my.rf3 , newdata = mydf2 )
+print( cor.test(  mypred1 , myhrf2[,1] ) )
 plot(  myhrf2[,1] , type='l' )
-points(    as.numeric(my.rf1$predicted) , type='l' , col='green')
-
-mypred<-predict( my.rf2 , newdata = mydf2 )
-print( cor.test(  as.numeric(my.rf2$predicted) , myhrf2[,2] ) )
+points(   mypred1 , type='l' , col='green')
+Sys.sleep(3)
+print( cor.test(  mypred2 , myhrf2[,2] ) )
 plot(  myhrf2[,2] , type='l' )
-points(    as.numeric(my.rf2$predicted) , type='l' , col='green')
-
-mypred<-predict( my.rf3 , newdata = mydf2 )
-print( cor.test(  as.numeric(my.rf3$predicted) , myhrf2[,3] ) )
+points(   mypred2 , type='l' , col='green')
+Sys.sleep(3)
+print( cor.test(  mypred3 , myhrf2[,3] ) )
 plot(  myhrf2[,3] , type='l' )
-points(    as.numeric(my.rf3$predicted) , type='l' , col='green')
+points(   mypred3 , type='l' , col='green')
