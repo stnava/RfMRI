@@ -115,14 +115,15 @@ if ( is.null( opt$bold ) ) {
   print(paste("Do Motor",domotor,opt$design," run ", opt$run ))
   tr<-as.numeric( opt$tr )
   nbadframes<-5
-  blockfing = c(0, 36, 72, 108,144)+nbadframes # nbadframes frames of offset 
+  blockfing = c(0, 36, 72, 108,144)+nbadframes
   blockfoot <- blockfing + 12
-  blockmout <- blockfoot + 12 ; blockmout<-blockmout[1:(length(blockmout)-1)]
+  blockmout <- blockfoot + 12 
   blocko = c(1, 24, 48, 72, 96, 120, 144 )+nbadframes # covert 
-  if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  12,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
-  ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  12,  length( blockfoot ) ) ,  rt=tr )
-  ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  12,  length( blockmout ) ) ,  rt=tr )
+  if ( domotor ) ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfing , durations=rep(  6,  length( blockfing ) ) ,  rt=tr ) else ohrf <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blocko , durations=rep(  12,  length( blocko ) ) ,  rt=tr ) 
+  ohrf2 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockfoot , durations=rep(  6,  length( blockfoot ) ) ,  rt=tr )
+  ohrf3 <- hemodynamicRF( scans=dim(fmri)[4] , onsets=blockmout , durations=rep(  6,  length( blockmout ) ) ,  rt=tr )
   if ( domotor ) ohrf<-cbind( ohrf , ohrf2, ohrf3 ) else ohrf<-cbind( ohrf )
+  ohrf[1:4,]<-0 # first few frames are junk
   nuis<-read.csv(fnn[1])
   bnuis<-as.matrix( data.frame( globalsignal = nuis$myvarsin.globalsignal, motion1=nuis$motion1, motion2=nuis$motion2, motion3=nuis$motion3, compcorr1=nuis$compcorr1, compcorr2=nuis$compcorr2, compcorr3=nuis$compcorr3  ) )
   bnuis<-bnuis[nbadframes:nrow(mat), ]
