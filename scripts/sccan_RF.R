@@ -5,7 +5,7 @@ library( mboost )
 dowhiten <- TRUE
 useglmb <- FALSE
 takeoutresid <- TRUE
-subnum<-"002"
+subnum<-"004"
 print(paste("a random forest test on fmri ... takeoutresid? ",takeoutresid,'subject',subnum))
 rootdir<-paste("/Users/stnava/data/data_gorgolewski/RfMRI/")
 gimgfn<-paste(rootdir,"OptGroupTask003Run001sccan.nii.gz",sep='')
@@ -41,6 +41,7 @@ selector[1:(nbadframes-1)] <- FALSE
 mat<-subset( mat , selector )
 nuis<-subset( nuis , selector )
 myhrf<-subset( ohrf , selector )
+nuis<-as.matrix( residuals( lm( as.matrix(nuis) ~ myhrf ) ) )
 if ( takeoutresid )  mat<-( as.matrix( residuals( lm( mat  ~ as.matrix( nuis ) ) ) ) )
 myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
 mat[,1]<-myglobsig
@@ -111,6 +112,7 @@ selector2[1:(nbadframes-1)] <- FALSE
 mat2<-subset( mat2 , selector )
 nuis2<-subset( nuis2 , selector )
 myhrf2<-subset( ohrf , selector )
+nuis2<-as.matrix( residuals( lm( as.matrix(nuis2) ~ myhrf2 ) ) )
 if ( takeoutresid ) mat2<-( as.matrix( residuals( lm( mat2  ~ as.matrix( nuis2 ) ) ) ) )
 myglobsig2<-apply( mat2, FUN=mean, MARGIN=1 )
 mat2[,1]<-myglobsig2
