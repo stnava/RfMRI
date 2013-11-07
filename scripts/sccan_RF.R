@@ -5,7 +5,7 @@ library( mboost )
 dowhiten <- TRUE
 useglmb <- FALSE
 takeoutresid <- TRUE
-subnum<-"004"
+subnum<-"002"
 print(paste("a random forest test on fmri ... takeoutresid? ",takeoutresid,'subject',subnum))
 rootdir<-paste("/Users/stnava/data/data_gorgolewski/RfMRI/")
 gimgfn<-paste(rootdir,"OptGroupTask003Run001sccan.nii.gz",sep='')
@@ -76,7 +76,7 @@ img5[ mask > 0 ]<- sparsifyv( svd( mat )$u[2,] %*% mat, threshinit, mask )
 initlist<-list( img1,img2,img3,img4 )
 myhrfb<-matrix( as.numeric( myhrf > 0.5 ) , nrow=nrow(myhrf) )
 mypreds <- cbind(myhrf,myhrfb)
-ff<-sparseDecom2( inmatrix=list(mat,mypreds), inmask=list(mask,NA), perms=0, its=45, mycoption=1, sparseness=c( -0.05, 0.1 ) , nvecs= ncol( mypreds ), smooth=1, cthresh=c(10,0), ell1 = 11 , z=-1 ) #  , initializationList=initlist )
+ff<-sparseDecom2( inmatrix=list(mat,mypreds), inmask=list(mask,NA), perms=0, its=45, mycoption=1, sparseness=c( -0.02, 0.1 ) , nvecs= ncol( mypreds ), smooth=1, cthresh=c(10,0), ell1 = 11 , z=-1 ) #  , initializationList=initlist )
 print( ff$eig2 )
 mysccanimages<-imageListToMatrix( imageList=ff$eig1, mask=mask)
 # ff<-sparseDecom( inmatrix=mat, inmask=mask,its=5,
