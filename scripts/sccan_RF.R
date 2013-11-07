@@ -3,9 +3,9 @@ library( randomForest)
 library( vegan )
 library( mboost )
 dowhiten <- TRUE
-useglmb <- TRUE
+useglmb <- FALSE
 takeoutresid <- TRUE
-subnum<-"004"
+subnum<-"002"
 print(paste("a random forest test on fmri ... takeoutresid? ",takeoutresid,'subject',subnum))
 rootdir<-paste("/Users/stnava/data/data_gorgolewski/RfMRI/")
 gimgfn<-paste(rootdir,"OptGroupTask003Run001sccan.nii.gz",sep='')
