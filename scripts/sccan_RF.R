@@ -5,7 +5,7 @@ library( mboost )
 dowhiten <- TRUE
 useglmb <- FALSE
 takeoutresid <- TRUE
-subnum<-"002"
+subnum<-"010"
 print(paste("a random forest test on fmri ... takeoutresid? ",takeoutresid,'subject',subnum))
 rootdir<-paste("/Users/stnava/data/data_gorgolewski/RfMRI/")
 gimgfn<-paste(rootdir,"OptGroupTask003Run001sccan.nii.gz",sep='')
@@ -109,9 +109,10 @@ mat2<-timeseries2matrix( fmri2 , mask )
 myglobsig2<-apply( mat2, FUN=mean, MARGIN=1 )
 selector2<-myglobsig2 > boldthresh
 selector2[1:(nbadframes-1)] <- FALSE
-mat2<-subset( mat2 , selector )
-nuis2<-subset( nuis2 , selector )
-myhrf2<-subset( ohrf , selector )
+# selector2[50:length(selector2)] <- FALSE # for testing sub-sequence prediction
+mat2<-subset( mat2 , selector2 )
+nuis2<-subset( nuis2 , selector2 )
+myhrf2<-subset( ohrf , selector2 )
 nuis2<-as.matrix( residuals( lm( as.matrix(nuis2) ~ myhrf2 ) ) )
 if ( takeoutresid ) mat2<-( as.matrix( residuals( lm( mat2  ~ as.matrix( nuis2 ) ) ) ) )
 myglobsig2<-apply( mat2, FUN=mean, MARGIN=1 )
