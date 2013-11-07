@@ -714,7 +714,7 @@ with rest.  Prediction from group and subject features via \R and \textit{SCCAN}
   \includegraphics[width=0.95\textwidth]{./figure/decoding002.pdf}
   \caption{Subject 1.}
 \end{figure}
-Several obvious prior constraints and voting will improve results.
+Prior constraints and voting will improve results.
 \end{frame}
 
 
@@ -727,7 +727,7 @@ with rest.  Prediction from group and subject features via \R and \textit{SCCAN}
   \includegraphics[width=0.95\textwidth]{./figure/decoding004.pdf}
   \caption{Subject 2.}
 \end{figure}
-Several obvious prior constraints and voting will improve results.
+Prior constraints and voting will improve results.
 \end{frame}
 
 
