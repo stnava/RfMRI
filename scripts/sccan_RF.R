@@ -1,10 +1,16 @@
 library( ANTsR )
 library( randomForest)
 library( vegan )
+library( mboost )
+dowhiten <- TRUE
+useglmb <- TRUE
 takeoutresid <- TRUE
-print(paste("a random forest test on fmri ... takeoutresid? ",takeoutresid))
-subnum<-"010"
-setwd(paste("/Users/stnava/data/data_gorgolewski/RfMRI/group_analysis/sub",subnum,"/task003/run001",sep=''))
+subnum<-"004"
+print(paste("a random forest test on fmri ... takeoutresid? ",takeoutresid,'subject',subnum))
+rootdir<-paste("/Users/stnava/data/data_gorgolewski/RfMRI/")
+gimgfn<-paste(rootdir,"OptGroupTask003Run001sccan.nii.gz",sep='')
+groupimg<-antsImageRead( gimgfn , 3 )
+setwd(paste(rootdir,"/group_analysis/sub",subnum,"/task003/run001",sep=''))
 fmri<-antsImageRead(paste('sub',subnum,'_group.nii.gz',sep=''),4)
 tr<-2.5
 nbadframes<-5
@@ -26,6 +32,7 @@ th<-c(1,90)
 thresholdBool <- mask > th[2] | mask < th[1]
 mask[   thresholdBool ]<-0
 mask[ ! thresholdBool ]<-1
+groupvec<-groupimg[ mask > 0 ]
 mat<-timeseries2matrix( fmri , mask )
 myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
 boldthresh<-1200 # mean(myglobsig)-6*sd(myglobsig)
@@ -37,6 +44,7 @@ myhrf<-subset( ohrf , selector )
 if ( takeoutresid )  mat<-( as.matrix( residuals( lm( mat  ~ as.matrix( nuis ) ) ) ) )
 myglobsig<-apply( mat, FUN=mean, MARGIN=1 )
 mat[,1]<-myglobsig
+if ( dowhiten ) mat <- temporalwhiten( mat ) 
 plot(   myhrf[,1], type='l' )
 points( myhrf[,2], type='l', col='blue' )
 points( myhrf[,3], type='l', col='red' )
@@ -53,25 +61,21 @@ for ( i in 5:nrow(myhrf) )
 points( mysums, type='l', col='green' )
 binpreds <- as.factor( binpreds )
 myglobsigresid<-residuals( lm( myglobsig ~ myhrf ) )
-threshinit<-3
+threshinit<-0.3
 img1<-antsImageClone( mask )
-img1[ mask > 0 ]<- myhrf[,1] %*% mat 
-if ( threshinit > 0 ) img1[ img1 <  (mean(img1)+threshinit*sd(img1)) ] <- 0
+img1[ mask > 0 ]<-sparsify( myhrf[,1] %*% mat , threshinit, mask )
 img2<-antsImageClone( mask )
-img2[ mask > 0 ]<- myhrf[,2] %*% mat 
-if ( threshinit > 0 ) img2[ img2 <  (mean(img2)+threshinit*sd(img2)) ] <- 0
+img2[ mask > 0 ]<-sparsify( myhrf[,2] %*% mat , threshinit, mask )
 img3<-antsImageClone( mask )
-img3[ mask > 0 ]<- myhrf[,3] %*% mat 
-if ( threshinit > 0 ) img3[ img3 <  (mean(img3)+threshinit*sd(img3)) ] <- 0
+img3[ mask > 0 ]<-sparsify( myhrf[,3] %*% mat , threshinit, mask )
 img4<-antsImageClone( mask )
-img4[ mask > 0 ]<- myglobsigresid %*% mat
-if ( threshinit > 0) img4[ img4 < (mean(img4)+threshinit*sd(img4))  ] <- 0
+img4[ mask > 0 ]<- sparsify( myglobsigresid %*% mat, threshinit, mask )
 img5<-antsImageClone( mask )
-img5[ mask > 0 ]<- svd( mat )$u[5,] %*% mat
-if ( threshinit > 0 ) img5[ img5 < (mean(img5)+threshinit*sd(img5)) ] <- 0
-initlist<-list( img1,img2,img3,img4, img5 )
-ff<-sparseDecom2( inmatrix=list(mat, cbind(myhrf,myglobsigresid)), inmask=list(mask,NA), perms=0, its=22,mycoption=1, sparseness=c( -0.1, -0.2 ) , nvecs= length( initlist ) , smooth=1, cthresh=c(10,0), ell1 = 11 , z=-1 , initializationList=initlist )
+img5[ mask > 0 ]<- sparsifyv( svd( mat )$u[2,] %*% mat, threshinit, mask )
+initlist<-list( img1,img2,img3,img4 )
+ff<-sparseDecom2( inmatrix=list(mat, cbind(myhrf)), inmask=list(mask,NA), perms=0, its=45, mycoption=1, sparseness=c( -0.05, 0.1 ) , nvecs= length( initlist ) , smooth=1, cthresh=c(10,0), ell1 = 11 , z=-1 ) #  , initializationList=initlist )
 print( ff$eig2 )
+mysccanimages<-imageListToMatrix( imageList=ff$eig1, mask=mask)
 # ff<-sparseDecom( inmatrix=mat, inmask=mask,its=5,
 #                  mycoption=1, sparseness=c(-0.1) ,nvecs=11, 
 #                  smooth=1, cthresh=10, z=-1 )
@@ -83,13 +87,18 @@ for ( i in 1:length(ff$eig1) ) {
   ImageMath(3,visimg,'Normalize',visimg)
   plotANTsImage( myantsimage=temimg, functional=list(visimg) , slices="2x25x1", ,axis=0, color=c("red") , threshold="0.01x1", outname=paste("temp",i,".jpg",sep='') ) 
 }
-mydf<-data.frame( binpreds = myhrf[,1] , imgs = ff$projections )
-my.rf1<-randomForest( binpreds ~ . , data=mydf )
-mydf<-data.frame( binpreds = myhrf[,2] , imgs = ff$projections )
-my.rf2<-randomForest( binpreds ~ . , data=mydf )
-mydf<-data.frame( binpreds = myhrf[,3] , imgs = ff$projections )
-my.rf3<-randomForest( binpreds ~ . , data=mydf )
-
+gimgproj <- ( mat ) %*% groupvec
+mysccanpreds <- ( mat  ) %*% t( mysccanimages )
+colnames( mysccanpreds )<-colnames( ff$projections )
+mydf<-data.frame( binpreds1 = myhrf[,1] , imgs = mysccanpreds  , gimgproj = gimgproj )
+my.rf1<-randomForest( binpreds1 ~ . , data=mydf )
+if ( useglmb ) my.rf1<-          glmboost( binpreds1 ~ . , data=mydf )
+mydf<-data.frame( binpreds2 = myhrf[,2] , imgs = mysccanpreds  , gimgproj = gimgproj )
+my.rf2<-randomForest( binpreds2 ~ . , data=mydf )
+if ( useglmb ) my.rf2<-          glmboost( binpreds2 ~ . , data=mydf )
+mydf<-data.frame( binpreds3 = myhrf[,3] , imgs = mysccanpreds  , gimgproj = gimgproj )
+my.rf3<-randomForest( binpreds3 ~ . , data=mydf )
+if ( useglmb ) my.rf3<-          glmboost( binpreds3 ~ . , data=mydf )
 ######################################################################
 fmri2<-antsImageRead( paste('../run002/sub',subnum,'_group.nii.gz',sep='') , 4 )
 nuis2<-read.csv('nuis.csv')
@@ -103,10 +112,11 @@ myhrf2<-subset( ohrf , selector )
 if ( takeoutresid ) mat2<-( as.matrix( residuals( lm( mat2  ~ as.matrix( nuis2 ) ) ) ) )
 myglobsig2<-apply( mat2, FUN=mean, MARGIN=1 )
 mat2[,1]<-myglobsig2
-mysccanimages<-imageListToMatrix( imageList=ff$eig1, mask=mask)
-mysccanpreds <-decostand( mat2 , method="standardize" , MARGIN=2 )  %*% t( mysccanimages )
+if ( dowhiten ) mat2 <- temporalwhiten( mat2 ) 
+gimgproj <- ( mat2 )  %*% groupvec
+mysccanpreds <- ( mat2  ) %*% t( mysccanimages )
 colnames( mysccanpreds )<-colnames( ff$projections )
-mydf2<-data.frame(  imgs = mysccanpreds )
+mydf2<-data.frame(  imgs = mysccanpreds , gimgproj = gimgproj )
 ########################################################################################################
 mypred1<-predict( my.rf1 , newdata = mydf2 )
 mypred2<-predict( my.rf2 , newdata = mydf2 )
@@ -122,3 +132,12 @@ Sys.sleep(3)
 print( cor.test(  mypred3 , myhrf2[,3] ) )
 plot(  myhrf2[,3] , type='l' )
 points(   mypred3 , type='l' , col='green')
+Sys.sleep(3)
+pdf(paste(rootdir,'/figure/decoding',subnum,".pdf",sep=''),width=7,height=3)
+plot(   mypred1 , type='l' , col='black',lty=2,ylim=c(-1,2),main="BOLD (dashed) decodes stimulus HRF (solid)")
+points(   mypred2 , type='l' , col='red',lty=2)
+points(   mypred3 , type='l' , col='green',lty=2)
+points(   myhrf[,1] , type='l' , col='black',pch=2)
+points(   myhrf[,2] , type='l' , col='red',pch=2)
+points(   myhrf[,3] , type='l' , col='green',pch=2)
+dev.off()

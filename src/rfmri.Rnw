@@ -130,7 +130,8 @@ distributed under the\\
 
 
 \begin{frame}[fragile]
-\frametitle{\antsr group-wise fMRI processing}
+\frametitle{\antsr group-wise fMRI: BOBO\footnote{processing based on
+    bold only}}
 \begin{tikzpicture}[overlay,thick]
 \begin{scope}[shift={(0mm,-4mm)}]
 \node[draw=blue] at (0,3) (fmri) {fMRI};
@@ -248,8 +249,8 @@ Validation Mechanisms
 \item Measure signal overlap (Dice) between clusters in thresholded beta map.
 \item \sout{Minimum distance sum (MDS) between clusters in thresholded beta map between two runs}
 \begin{block}{Prediction}
- \sout{Significance of training features in testing run}---{\em Need
-   to refactor this ... }
+ Subject-level and group-wise feature selection followed by
+ subject-specific prediction.
 \end{block}
 \end{itemize}
 \end{frame}
@@ -701,6 +702,34 @@ and univariate group-level analysis}
 \end{itemize}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Trivial Preliminary Results: Decoding \textit{S1}}
+Train on Run 1 and test on Run 2 --- finger, mouth, foot interleaved
+with rest.  Prediction via \R and \textit{SCCAN}.
+\begin{figure}[h!]
+ \centering
+  \includegraphics[width=0.95\textwidth]{./figure/decoding002.pdf}
+  \caption{Subject 1.}
+\end{figure}
+Several obvious prior constraints and voting will improve results.
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Trivial Preliminary Results: Decoding \textit{S2}}
+Train on Run 1 and test on Run 2 --- finger, mouth, foot interleaved
+with rest.  Prediction via \R and \textit{SCCAN}.
+\begin{figure}[h!]
+ \centering
+  \includegraphics[width=0.95\textwidth]{./figure/decoding004.pdf}
+  \caption{Subject 2.}
+\end{figure}
+Several obvious prior constraints and voting will improve results.
+\end{frame}
 
 
 \end{document}
