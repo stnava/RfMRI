@@ -78,12 +78,13 @@ myhrfb<-matrix( as.numeric( myhrf > 0.5 ) , nrow=nrow(myhrf) )
 mypreds <- cbind(myhrf,myhrfb)
 ff<-sparseDecom2( inmatrix=list(mat,mypreds), inmask=list(mask,NA), perms=0, its=45, mycoption=1, sparseness=c( -0.02, 0.1 ) , nvecs= ncol( mypreds ), smooth=1, cthresh=c(10,0), ell1 = 11 , z=-1 ) #  , initializationList=initlist )
 print( ff$eig2 )
+if ( FALSE ) {
+ ff<-sparseDecom( inmatrix=mat, inmask=mask,its=3,
+                  mycoption=1, sparseness=c(0.02) ,nvecs=50, 
+                  smooth=1, cthresh=10, z=-1 )
+  names(ff)[2]<-"eig1"
+}
 mysccanimages<-imageListToMatrix( imageList=ff$eig1, mask=mask)
-# ff<-sparseDecom( inmatrix=mat, inmask=mask,its=5,
-#                  mycoption=1, sparseness=c(-0.1) ,nvecs=11, 
-#                  smooth=1, cthresh=10, z=-1 )
-# names(ff)[2]<-"eig1"
-# names(ff)[3]<-"projections"
 for ( i in 1:length(ff$eig1) ) {
   visimg<-antsImageClone( ff$eig1[[i]] )
   ImageMath(3,visimg,'abs',visimg)
